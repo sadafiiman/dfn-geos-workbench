@@ -155,6 +155,8 @@ class Handler(BaseHTTPRequestHandler):
 
         if path in ("/", ""):
             return self.page_dashboard()
+        if path == "/quick":
+            return self.page_quick()
         if path == "/static/style.css":
             return self._static("static/style.css", "text/css")
         if path == "/static/app.js":
@@ -168,6 +170,9 @@ class Handler(BaseHTTPRequestHandler):
         m = re.fullmatch(r"/case/(\d+)/file", path)
         if m:
             return self.file_view(int(m.group(1)), query)
+        m = re.fullmatch(r"/case/(\d+)/download\.zip", path)
+        if m:
+            return self.download_zip(int(m.group(1)))
         m = re.fullmatch(r"/job/(\d+)", path)
         if m:
             return self.page_job(int(m.group(1)))
@@ -186,6 +191,8 @@ class Handler(BaseHTTPRequestHandler):
         panel = self.panel
         if path == "/case/new":
             return self.action_case_new()
+        if path == "/quick":
+            return self.action_quick()
         m = re.fullmatch(r"/case/(\d+)/run", path)
         if m:
             form = self._form()
@@ -260,6 +267,14 @@ class Handler(BaseHTTPRequestHandler):
           <div class="card"><h3>dfnWorks</h3><code>{R.esc(dw)}</code></div>
           <div class="card"><h3>LaGriT</h3><code>{R.esc(lg)}</code></div>
           <div class="card"><h3>GEOS</h3><code>{R.esc(geos)}</code></div>
+        </div>
+        <div class="card quick-cta">
+          <div>
+            <h2>Quick process</h2>
+            <p class="muted">Upload a ZIP of dfnWorks files (or outputs) and get
+            the GEOS case back as a single ZIP — no configuration needed.</p>
+          </div>
+          <a class="btn primary" href="/quick">Upload &amp; process →</a>
         </div>
         <div class="row">
           <div class="card grow">
@@ -360,6 +375,8 @@ class Handler(BaseHTTPRequestHandler):
         <div class="card-head">
           <h2>{R.esc(case['name'])}</h2>
           <span class="muted">{R.esc(case['description'] or '')}</span>
+          <span><a class="btn primary"
+            href="/case/{case_id}/download.zip">⬇ Download results (.zip)</a></span>
         </div>
         <div class="cards">
           <div class="card"><h3>Pipeline</h3><div class="stages">{stage_buttons}</div></div>
@@ -408,6 +425,161 @@ class Handler(BaseHTTPRequestHandler):
         <div class="card"><h3>Details</h3><pre>{R.esc(json.dumps(job['details'], indent=2))}</pre></div>
         """
         self._html(200, f"Job #{job_id}", body)
+
+    def page_quick(self):
+        panel = self.panel
+        geos_ok = bool(panel.config["geos_exe"])
+        body = f"""
+        <div class="card narrow">
+        <h2>Quick process</h2>
+        <p class="muted">Drop a <b>ZIP</b> of your dfnWorks files (or the raw
+        output files) and press <b>Process</b>. The panel inspects the contents
+        and runs the right stage(s) automatically, then lets you download the
+        results as one ZIP.</p>
+        <form method="post" action="/quick" enctype="multipart/form-data" class="stack">
+          <label>Name (optional — derived from the file name otherwise)
+            <input name="name" placeholder="my_network"></label>
+          <label>ZIP file or loose files
+            <input type="file" name="files" multiple required></label>
+          <label>What to do
+            <select name="action">
+              <option value="auto" selected>Auto-detect (recommended)</option>
+              <option value="full">Run full pipeline (dfnWorks → convert → GEOS)</option>
+              <option value="convert">Convert only (dfnWorks outputs → GEOS case)</option>
+              <option value="geos">Run GEOS only (XML + mesh uploaded)</option>
+            </select></label>
+          <p class="muted">Recognised: <code>full_mesh.inp</code>,
+             <code>params.txt</code>, <code>polys/</code>,
+             <code>dfm_mesh/dfm_tet_mesh.inp</code>, <code>dfn_driver.py</code>,
+             GEOS <code>*.xml</code>/<code>*.vtm</code>/<code>*.vtu</code>.
+             GEOS executable configured: <b>{"yes" if geos_ok else "no"}</b>{"" if geos_ok else " (stage 3 will be skipped)"}.</p>
+          <button class="btn primary">Process</button>
+        </form>
+        <p class="muted">Prefer manual control? Use <a href="/case/new">New case</a>
+        and run the three stages yourself.</p>
+        </div>"""
+        self._html(200, "Quick process", body, active="quick")
+
+    def action_quick(self):
+        """Upload → create case → auto-run detected pipeline."""
+        import time as _time
+
+        from . import ingest
+        panel = self.panel
+        ctype = self.headers.get("Content-Type", "")
+        if "multipart/form-data" not in ctype:
+            return self._redirect("/quick")
+        boundary_m = re.search(r'boundary="?([^";]+)"?', ctype)
+        if not boundary_m:
+            return self._redirect("/quick")
+        boundary = boundary_m.group(1).encode()
+        body = self._body()
+
+        # split parts
+        files, name_field, action_field = [], "", "auto"
+        for part in body.split(b"--" + boundary):
+            part = part.strip(b"\r\n")
+            if not part or part == b"--" or b"\r\n\r\n" not in part:
+                continue
+            head, data = part.split(b"\r\n\r\n", 1)
+            headers = head.decode("utf-8", "replace")
+            fn = re.search(r'filename="([^"]*)"', headers)
+            if fn and fn.group(1):
+                files.append((os.path.basename(
+                    fn.group(1).replace("\\", "/")), data))
+            elif 'name="name"' in headers:
+                name_field = data.decode("utf-8", "replace").strip()
+            elif 'name="action"' in headers:
+                action_field = data.decode("utf-8", "replace").strip() or "auto"
+        if not files:
+            return self._redirect("/quick")
+
+        # case name: field, zip stem, or timestamp
+        raw_name = name_field or os.path.splitext(files[0][0])[0] or \
+            f"case_{int(_time.time())}"
+        name = re.sub(r"[^A-Za-z0-9_\-]", "_", raw_name)[:60] or \
+            f"case_{int(_time.time())}"
+        existing = {c["name"] for c in panel.db.list_cases()}
+        base, n = name, 2
+        while name in existing:
+            name = f"{base}-{n}"
+            n += 1
+
+        case_id = panel.db.create_case(name, "created by Quick process",
+                                       {"source": "quick",
+                                        "action": action_field})
+        case_dir = panel.case_dir(panel.db.get_case(case_id))
+        case_dir.mkdir(parents=True, exist_ok=True)
+
+        # extract zips / place files
+        written: list[str] = []
+        loose = []
+        for filename, data in files:
+            if filename.lower().endswith(".zip"):
+                try:
+                    written += ingest.safe_extract_zip(data, case_dir)
+                except Exception as exc:  # noqa: BLE001
+                    (case_dir / "extract_error.txt").write_text(str(exc))
+            else:
+                loose.append(("files", filename, data))
+        if loose:
+            written += ingest.place_loose_files(loose, case_dir)
+
+        for rel in written:
+            p = case_dir / rel
+            panel.db.add_artifact(case_id, "input", rel,
+                                  p.stat().st_size if p.is_file() else 0)
+
+        # decide pipeline
+        info = ingest.detect_action(written, bool(panel.config["geos_exe"]))
+        action = action_field if action_field != "auto" else info["action"]
+        chain_map = {
+            "full": ["dfn_mesh", "convert_to_geos"]
+                    + (["run_geos"] if panel.config["geos_exe"] else []),
+            "convert": ["convert_to_geos"],
+            "geos": ["run_geos"],
+        }
+        chain = chain_map.get(action, info["chain"])
+        if chain:
+            panel.runner.submit(case_id, chain[0],
+                                details={"quick": True,
+                                         "detected": info,
+                                         "action": action},
+                                chain=chain[1:])
+        panel.db.update_case(case_id, params={
+            "source": "quick", "action": action, "detected": info,
+            "files": written[:50]})
+        self._redirect(f"/case/{case_id}")
+
+    def download_zip(self, case_id: int):
+        """Bundle the case outputs into a downloadable ZIP."""
+        import io as _io
+        import zipfile as _zipfile
+        panel = self.panel
+        case = panel.db.get_case(case_id)
+        if not case:
+            return self._html(404, "Not found", "<div class='card'>No such case</div>")
+        case_dir = panel.case_dir(case)
+        skip_dirs = set()
+        buf = _io.BytesIO()
+        with _zipfile.ZipFile(buf, "w", _zipfile.ZIP_DEFLATED,
+                              compresslevel=6) as zf:
+            for p in sorted(case_dir.rglob("*")):
+                if not p.is_file():
+                    continue
+                rel = p.relative_to(case_dir)
+                parts = rel.parts
+                if parts and parts[0] in ("logs",) and len(parts) > 1:
+                    continue
+                if p.name in (".dfnworksrc",) or p.suffix == ".lg":
+                    continue
+                if parts and parts[0] in skip_dirs:
+                    continue
+                zf.write(p, arcname=str(rel))
+        data = buf.getvalue()
+        self._send(200, data, "application/zip", {
+            "Content-Disposition":
+                f'attachment; filename="{case["name"]}_results.zip"'})
 
     def page_settings(self):
         panel = self.panel

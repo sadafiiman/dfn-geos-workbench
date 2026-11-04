@@ -28,6 +28,7 @@ def fmt_size(n: int | float) -> str:
 def layout(title: str, body: str, active: str = "") -> str:
     nav = [
         ("", "Dashboard"),
+        ("quick", "Quick process"),
         ("settings", "Settings"),
         ("docs", "Guide"),
     ]

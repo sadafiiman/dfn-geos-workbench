@@ -330,7 +330,11 @@ Location: `/home/kiman/Downloads/behnam/dfn-geos-workbench/`.
    this environment: case `docker_case` → job #9 (dfnWorks mesh, docker
    backend) rc=0 with all artifacts registered → job #10 (conversion, native)
    rc=0 → `geos_case/` produced. Stage 3 executes GEOS as soon as `geos_exe`
-   is configured in the panel settings (native or docker).
+   is configured in the panel settings (native or docker). A **Quick process**
+   page additionally accepts a ZIP of dfnWorks files (or outputs), auto-detects
+   what to run, chains the stages and returns all results as a single
+   downloadable ZIP (verified: a 3.6 MB zip of `full_mesh.inp` + `dfm_mesh/` +
+   `polys/` produced both GEOS decks in one automatic conversion job).
 
 Run order: `run_dfn_example.py` + `run_dfm.py` (or panel stage 1) →
 `dfn_to_geos.py` (panel stage 2) → `geos -i geos_case/geos_dfn_fractures.xml`

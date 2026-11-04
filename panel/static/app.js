@@ -35,4 +35,13 @@
         .then(() => location.reload());
     }
   });
+
+  // Auto-refresh case/dashboard pages while any job is queued or running,
+  // so an upload-and-process flow shows results without manual reloads.
+  if (!logbox) {
+    const busy = document.querySelector(".badge-running, .badge-queued");
+    if (busy) {
+      setTimeout(() => location.reload(), 4000);
+    }
+  }
 })();

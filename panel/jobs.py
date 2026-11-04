@@ -39,7 +39,8 @@ class JobRunner:
                                details={"error": "panel restarted during job"})
 
     # --------------------------------------------------------------- control --
-    def submit(self, case_id: int, stage: str, details: dict | None = None) -> int:
+    def submit(self, case_id: int, stage: str, details: dict | None = None,
+               chain: list[str] | None = None) -> int:
         backend = ""
         if stage == STAGE_DFN_MESH:
             backend, _img = self.config.resolve_backend("dfnworks")
@@ -47,8 +48,11 @@ class JobRunner:
             backend, _img = self.config.resolve_backend("geos")
         else:
             backend = "native"  # conversion runs natively (numpy only)
+        details = dict(details or {})
+        if chain:
+            details["chain"] = list(chain)
         job_id = self.db.create_job(case_id, stage, backend=backend,
-                                    details=details or {})
+                                    details=details)
         t = threading.Thread(target=self._run, args=(job_id,), daemon=True)
         self._threads[job_id] = t
         t.start()
@@ -77,33 +81,46 @@ class JobRunner:
             argv, env, cwd, use_shell = builder(self.config, case, case_dir)
             backend = job["backend"]
 
-            if backend == "docker":
-                argv, env = self._dockerize(argv, env, case_dir, job["stage"])
-
             creationflags = 0
             if os.name == "nt":  # Windows: detach console windows
                 creationflags = subprocess.CREATE_NO_WINDOW  # type: ignore[attr-defined]
 
+            # a stage may produce several commands (e.g. conformal + EDFM decks)
+            commands = argv if argv and isinstance(argv[0], (list, tuple)) \
+                else [argv]
+            rc = 0
             with open(log_path, "a", encoding="utf-8") as logf:
-                logf.write(f"$ {' '.join(argv)}\n"
-                           f"  (backend={backend}, cwd={cwd})\n\n")
-                logf.flush()
-                proc = subprocess.Popen(
-                    argv, cwd=str(cwd), env=env, stdout=logf,
-                    stderr=subprocess.STDOUT,
-                    shell=False, creationflags=creationflags)
-                with self._lock:
-                    self._procs[job_id] = proc
-                rc = proc.wait()
+                for cmd in commands:
+                    if backend == "docker":
+                        cmd, env = self._dockerize(list(cmd), env, case_dir,
+                                                   job["stage"])
+                    logf.write(f"$ {' '.join(cmd)}\n"
+                               f"  (backend={backend}, cwd={cwd})\n\n")
+                    logf.flush()
+                    proc = subprocess.Popen(
+                        cmd, cwd=str(cwd), env=env, stdout=logf,
+                        stderr=subprocess.STDOUT,
+                        shell=False, creationflags=creationflags)
+                    with self._lock:
+                        self._procs[job_id] = proc
+                    rc = proc.wait()
+                    if rc != 0:
+                        break
 
             if backend == "docker":
                 self._chown_case(case_dir)
 
+            details = collect_artifacts(job["stage"], case_dir, self.config, rc)
+            chain = list(job.get("details", {}).get("chain") or [])
+            if rc == 0 and chain:
+                details["chained_next"] = chain
             self.db.update_job(
                 job_id, status="done" if rc == 0 else "failed",
-                ended_at=time.time(), returncode=rc,
-                details=collect_artifacts(job["stage"], case_dir,
-                                          self.config, rc))
+                ended_at=time.time(), returncode=rc, details=details)
+            if rc == 0 and chain:
+                self.submit(job["case_id"], chain[0],
+                            details={"chained_from": job_id},
+                            chain=chain[1:])
         except Exception as exc:  # pragma: no cover - defensive
             with open(log_path, "a", encoding="utf-8") as logf:
                 logf.write(f"\nPANEL ERROR: {type(exc).__name__}: {exc}\n")
@@ -183,31 +200,47 @@ def stage_dfn_mesh(config: Config, case: dict, case_dir: Path):
 
 
 def stage_convert(config: Config, case: dict, case_dir: Path):
-    """Convert dfnWorks outputs into a GEOS case (VTM + XML decks)."""
+    """Convert dfnWorks outputs into a GEOS case (VTM + XML decks).
+
+    Searches the whole case directory for the dfnWorks outputs, so it works
+    both for panel-generated cases and for uploaded/extracted archives.
+    Produces the conformal case when a DFM mesh is present, and the EDFM deck
+    whenever a DFN job directory (params.txt / polys / full_mesh.inp) exists.
+    """
+    from .ingest import resolve_dfn_outputs
     conv_dir = Path(__file__).resolve().parent.parent / "conversion"
     python = sys.executable
-    dfm = case_dir / "output" / "dfm_mesh"
-    if (dfm / "dfm_tet_mesh.inp").exists():
-        argv = [python, str(conv_dir / "dfn_to_geos.py"),
-                "--dfm-dir", str(dfm),
-                "--out", str(case_dir / "geos_case")]
-    else:
-        argv = [python, str(conv_dir / "poly_to_geos_edfm.py"),
-                "--job-dir", str(case_dir / "output"),
-                "--out", str(case_dir / "geos_case_edfm")]
-    return argv, _base_env(config), case_dir, False
+    dfm_dir, job_dir = resolve_dfn_outputs(case_dir)
+
+    commands = []
+    if dfm_dir is not None:
+        commands.append([python, str(conv_dir / "dfn_to_geos.py"),
+                         "--dfm-dir", str(dfm_dir),
+                         "--out", str(case_dir / "geos_case")])
+    if job_dir is not None:
+        commands.append([python, str(conv_dir / "poly_to_geos_edfm.py"),
+                         "--job-dir", str(job_dir),
+                         "--out", str(case_dir / "geos_case_edfm")])
+    if not commands:
+        raise RuntimeError(
+            "no dfnWorks outputs found in the case (expected full_mesh.inp / "
+            "params.txt / polys/ and optional dfm_mesh/dfm_tet_mesh.inp)")
+    return commands, _base_env(config), case_dir, False
 
 
 def stage_geos_run(config: Config, case: dict, case_dir: Path):
-    """Run GEOS on the generated input deck."""
+    """Run GEOS on the generated input deck (searched anywhere in the case)."""
     geos = config["geos_exe"]
     if not geos:
         raise RuntimeError("GEOS executable is not configured (see Settings)")
-    xml = case_dir / "geos_case" / "geos_dfn_fractures.xml"
-    if not xml.exists():
-        xml = case_dir / "geos_case_edfm" / "geos_dfn_edfm.xml"
-    if not xml.exists():
-        raise RuntimeError("No GEOS input deck found; run the conversion stage first")
+    candidates = [case_dir / "geos_case" / "geos_dfn_fractures.xml",
+                  case_dir / "geos_case_edfm" / "geos_dfn_edfm.xml"]
+    candidates += sorted(case_dir.rglob("geos_dfn_*.xml"))
+    candidates += sorted(case_dir.rglob("*.xml"))
+    xml = next((p for p in candidates if p.exists()), None)
+    if xml is None:
+        raise RuntimeError("No GEOS input deck found; run the conversion "
+                           "stage first (or upload an XML + mesh)")
     nproc = str(case.get("params", {}).get("geos_nproc", 1))
     if nproc and nproc != "1":
         return ["mpiexec", "-np", nproc, geos, "-i", str(xml)], \

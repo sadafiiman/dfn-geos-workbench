@@ -53,6 +53,11 @@ dfn-geos-workbench/
 # 1) panel (no dependencies beyond Python + numpy)
 python3 run_panel.py --port 8765        # open http://localhost:8765
 
+# Simplest workflow - ZIP in, ZIP out:
+#   open the panel -> "Quick process" -> drop a zip of your dfnWorks files
+#   (or existing outputs) -> Process -> "Download results (.zip)".
+#   The panel auto-detects what to run (see docs/USER_GUIDE.md).
+
 # 2) proof of concept (CLI variant)
 cd poc
 docker run --rm -v "$(pwd)/..":/app -w /app ees16/dfnworks:latest \

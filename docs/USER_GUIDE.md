@@ -22,6 +22,41 @@ files, output files and job history, and offers a three-stage pipeline:
 
 ---
 
+## 0. The simplest way — *Quick process* (upload → results)
+
+If you just want to feed files in and get results out, skip the manual steps
+below and use **Quick process** in the top bar:
+
+1. **Pack your files.** Zip up whatever you have — e.g. a dfnWorks output
+   folder (`full_mesh.inp`, `params.txt`, `polys/`, and optionally
+   `dfm_mesh/`), your own driver/inputs, or a GEOS XML + mesh. A zip whose
+   contents sit inside one top-level folder is fine (the folder is stripped).
+   Loose files (no zip) also work: dfnWorks-like files are placed in
+   `output/` automatically.
+2. **Open Quick process** → optionally give a name → choose
+   *Auto-detect* (default) → **Process**.
+3. The panel inspects the upload and **runs the right stage(s) by itself**:
+
+   | Found in the upload | Pipeline run |
+   |---|---|
+   | `full_mesh.inp` / `params.txt` / `polys/` / `dfm_mesh/…` | **convert** → GEOS case + XML deck(s) |
+   | `dfn_driver.py` / `input_generator.dat` / `case_params.json` | **dfnWorks mesh → convert** (→ GEOS if configured) |
+   | `*.xml` + `*.vtm`/`*.vtu`/`*.vtp` | **run GEOS** |
+   | nothing recognised | full pipeline |
+
+   Stages run **chained**: when one finishes successfully the next starts
+   automatically. The case page auto-refreshes while jobs are running.
+4. **Download the result** with the **⬇ Download results (.zip)** button on
+   the case page. The archive contains your uploaded inputs *and* the
+   generated `geos_case/` (`case.vtm`, `main.vtu`, `fracture.vtu`,
+   `geos_dfn_fractures.xml`) plus, when possible, the EDFM deck
+   (`geos_case_edfm/geos_dfn_edfm.xml`).
+
+That's the whole loop: **ZIP in → ZIP out**. Everything below is the manual
+route when you want to control parameters or inspect each stage.
+
+---
+
 ## 1. Start the panel
 
 ```bash
