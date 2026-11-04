@@ -1,0 +1,187 @@
+<?xml version="1.0" ?>
+<Problem>
+  <!-- Proof of concept (Option C): dfnWorks fracture network rebuilt as
+       GEOS embedded discrete fractures (EDFM).
+       Source: dfnWorks run in output (5 fractures,
+       domain 6.0x6.0x6.0 m, h = 0.35 m). -->
+  <Solvers
+      gravityVector="{ 0.0, 0.0, -9.81 }">
+    <SinglePhaseFVM
+      name="SinglePhaseFlow"
+      logLevel="1"
+      discretization="singlePhaseTPFA"
+      targetRegions="{ RockMatrix, Fracture }">
+      <NonlinearSolverParameters
+        newtonTol="1.0e-4"
+        newtonMaxIter="10"/>
+      <LinearSolverParameters
+        directParallel="0"/>
+    </SinglePhaseFVM>
+
+    <EmbeddedSurfaceGenerator
+      name="SurfaceGenerator"
+      logLevel="1"
+      discretization="FE1"
+      targetRegions="{ RockMatrix, Fracture }"
+      targetObjects="{ Fracture1, Fracture2, Fracture3, Fracture4, Fracture5 }"
+      fractureRegion="Fracture"
+      mpiCommOrder="1"/>
+  </Solvers>
+
+  <Mesh>
+    <InternalMesh
+      name="matrix"
+      elementTypes="{ C3D8 }"
+      xCoords="{ -3.0, 3.0 }"
+      yCoords="{ -3.0, 3.0 }"
+      zCoords="{ -3.0, 3.0 }"
+      nx="{ 20 }"
+      ny="{ 20 }"
+      nz="{ 20 }"
+      cellBlockNames="{ cb1 }"/>
+  </Mesh>
+
+  <Geometry>
+    <Rectangle
+      name="Fracture1"
+      origin="{ 1.6269698, -1.1320371, 0.89337166 }"
+      normal="{ 0, 0, 1 }"
+      lengthVector="{ 0.12104656, 0.99264683, 0 }"
+      widthVector="{ -0.99264683, 0.12104656, 0 }"
+      dimensions="{ 3.860915, 3.280710 }"/>
+    <Rectangle
+      name="Fracture2"
+      origin="{ -0.51905143, 1.3605, 1.0397015 }"
+      normal="{ 0, 0, 1 }"
+      lengthVector="{ -0.88235221, -0.47058961, -0 }"
+      widthVector="{ 0.47058961, -0.88235221, 0 }"
+      dimensions="{ 5.096893, 4.763886 }"/>
+    <Rectangle
+      name="Fracture3"
+      origin="{ 0.28841024, 1.2367369, 1.9963821 }"
+      normal="{ 0, 0, 1 }"
+      lengthVector="{ 1, 0, 0 }"
+      widthVector="{ 0, 1, 0 }"
+      dimensions="{ 4.000000, 4.000000 }"/>
+    <Rectangle
+      name="Fracture4"
+      origin="{ -1.2580675, 1.4629409, 2.3570153 }"
+      normal="{ 0, 0, 1 }"
+      lengthVector="{ 0.11880445, 0.99291767, 0 }"
+      widthVector="{ -0.99291767, 0.11880445, 0 }"
+      dimensions="{ 3.671700, 2.440973 }"/>
+    <Rectangle
+      name="Fracture5"
+      origin="{ -1.367843, 2.0500482, 1.0839579 }"
+      normal="{ 0, 0, 1 }"
+      lengthVector="{ -0.99996666, -0.0081661959, -0 }"
+      widthVector="{ 0.0081661959, -0.99996666, 0 }"
+      dimensions="{ 3.397457, 2.099800 }"/>
+
+    <Box name="source" xMin="{ -3.01, -3.01, -3.01 }"
+                        xMax="{ -2.99, 3.01, 3.01 }"/>
+    <Box name="sink"   xMin="{ 2.99, -3.01, -3.01 }"
+                       xMax="{ 3.01, 3.01, 3.01 }"/>
+  </Geometry>
+
+  <Events maxTime="50000">
+    <SoloEvent
+      name="preFracture"
+      target="/Solvers/SurfaceGenerator"/>
+    <PeriodicEvent name="solverApplications"
+                   forceDt="1e3"
+                   target="/Solvers/SinglePhaseFlow"/>
+    <PeriodicEvent name="outputs"
+                   timeFrequency="1e4"
+                   target="/Outputs/vtkOutput"/>
+  </Events>
+
+  <NumericalMethods>
+    <FiniteVolume>
+      <TwoPointFluxApproximation name="singlePhaseTPFA"/>
+    </FiniteVolume>
+    <FiniteElements>
+      <FiniteElementSpace name="FE1" order="1"/>
+    </FiniteElements>
+  </NumericalMethods>
+
+  <ElementRegions>
+    <CellElementRegion
+      name="RockMatrix"
+      cellBlocks="{ cb1 }"
+      materialList="{ water, rock }"/>
+    <SurfaceElementRegion
+      name="Fracture"
+      defaultAperture="1.000000e-04"
+      materialList="{ water, fractureFilling }"
+      subRegionType="embeddedElement"/>
+  </ElementRegions>
+
+  <Constitutive>
+    <CompressibleSinglePhaseFluid
+      name="water"
+      defaultDensity="1000"
+      defaultViscosity="0.001"
+      referencePressure="0.0"
+      compressibility="5e-10"
+      viscosibility="0.0"/>
+
+    <CompressibleSolidConstantPermeability
+      name="rock"
+      solidModelName="nullSolid"
+      porosityModelName="rockPorosity"
+      permeabilityModelName="rockPerm"/>
+
+    <CompressibleSolidParallelPlatesPermeability
+      name="fractureFilling"
+      solidModelName="nullSolid"
+      porosityModelName="fracturePorosity"
+      permeabilityModelName="fracturePerm"/>
+
+    <NullModel name="nullSolid"/>
+
+    <PressurePorosity
+      name="rockPorosity"
+      defaultReferencePorosity="0.01"
+      referencePressure="0.0"
+      compressibility="1.0e-9"/>
+
+    <ConstantPermeability
+      name="rockPerm"
+      permeabilityComponents="{ 5.0e-19, 5.0e-19, 5.0e-19 }"/>
+
+    <PressurePorosity
+      name="fracturePorosity"
+      defaultReferencePorosity="1.00"
+      referencePressure="0.0"
+      compressibility="0.0"/>
+
+    <ParallelPlatesPermeability name="fracturePerm"/>
+  </Constitutive>
+
+  <FieldSpecifications>
+    <FieldSpecification
+      name="initialPressure"
+      initialCondition="1"
+      setNames="{ all }"
+      objectPath="ElementRegions/RockMatrix"
+      fieldName="pressure"
+      scale="0.0"/>
+    <FieldSpecification
+      name="source"
+      objectPath="ElementRegions/RockMatrix"
+      fieldName="pressure"
+      scale="2.0e6"
+      setNames="{ source }"/>
+    <FieldSpecification
+      name="sink"
+      objectPath="ElementRegions/RockMatrix"
+      fieldName="pressure"
+      scale="1.0e6"
+      setNames="{ sink }"/>
+  </FieldSpecifications>
+
+  <Outputs>
+    <VTK name="vtkOutput" format="ascii" plotFileRoot="dfn_edfm"/>
+  </Outputs>
+</Problem>

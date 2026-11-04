@@ -1,0 +1,88 @@
+ 
+ 
+*               * * * * * * * * * * * * * * * * * * * * * * * *                 
+*               *                                             *                 
+*               *    Program:  LaGriT V3.3.4   Linux          *                 
+*               *    Compiler Name: GNU                       *                 
+*               *    Compiler Version: 12.4.0                 *                 
+*               *    Date Compile: 2026/06/11                 *                 
+*               *    Run Time: 2026/Nov  4  13:00:45          *                 
+*               *    Manual:   https://lagrit.lanl.gov        *                 
+*               *                                             *                 
+*               * * * * * * * * * * * * * * * * * * * * * * * *                 
+ 
+                               -----oOo-----                                    
+             LaGriT V3 LA-CC-15-069  https://github.com/lanl/LaGriT             
+  Copyright 2016. Triad National Security, LLC.  All rights reserved. This      
+  program was produced under U.S. Government contract 89233218CNA000001         
+  for Los Alamos National Laboratory (LANL), which is operated by Triad         
+  National Security, LLC for the U.S. Department of Energy/National Nuclear     
+  Security Administration.  All rights in the program are reserved by Triad     
+  National Security, LLC, and the U.S. Department of Energy/National Nuclear    
+  Security Administration. The Government is granted for itself and others      
+  acting on its behalf a nonexclusive, paid-up, irrevocable worldwide license   
+  in this material to reproduce, prepare derivative works, distribute copies    
+  to the public, perform publicly and display publicly, and to permit others to 
+  do so. This software is open source and available under the BSD-3 License.    
+                               -----oOo-----                                    
+ 
+ 
+Output log file: translate_mesh.lgi.out                                         
+Command log file: translate_mesh.lgi.log                                        
+ 
+read/avs/full_mesh.inp/MODFN                                                    
+cmo/addatt/MODFN/dfield/VDOUBLE/scalar/nnodes/linear/permanent/gxaf/0.0         
+finish                                                                          
+cmo/addatt/MODFN/a_b/VINT/scalar/nnodes/linear/permanent/gxaf/0.0               
+finish                                                                          
+cmo/addatt/MODFN/b_a/VINT/scalar/nnodes/linear/permanent/gxaf/0.0               
+finish                                                                          
+cmo/addatt/MODFN/numbnd/VINT/scalar/nnodes/linear/permanent/gxaf/0.0            
+finish                                                                          
+cmo/addatt/MODFN/id_numb/VINT/scalar/nnodes/linear/permanent/gxaf/0.0           
+finish                                                                          
+cmo/addatt/MODFN/xnorm/VDOUBLE/scalar/nelements/linear/permanent/gxaf/0.0       
+finish                                                                          
+cmo/addatt/MODFN/ynorm/VDOUBLE/scalar/nelements/linear/permanent/gxaf/0.0       
+finish                                                                          
+cmo/addatt/MODFN/znorm/VDOUBLE/scalar/nelements/linear/permanent/gxaf/0.0       
+finish                                                                          
+cmo/addatt/MODFN/family_id/VINT/scalar/nelements/linear/permanent/gxaf/0.0      
+finish                                                                          
+cmo/addatt/MODFN/evol_one/VDOUBLE/scalar/nelements/linear/permanent/gxaf/0.0    
+finish                                                                          
+cmo/addatt/MODFN/evol_all/VDOUBLE/scalar/nelements/linear/permanent/gxaf/0.0    
+finish                                                                          
+geniee                                                                          
+ geniee: mesh has                    40  jtet loops, max cycle length=          
+                                                                               4
+finish                                                                          
+cmo/status/brief                                                                
+ 
+The current-mesh-object(CMO) is: MODFN                                          
+ 
+  1 Mesh Object name: MODFN                                                     
+    number of nodes =          1120        number of elements =         1948    
+    dimensions geometry =         3        element type =                tri    
+    dimensions topology =         2        3 nodes      3 faces      3 edges    
+    boundary flag =        16000000        status =                   active    
+ 
+ 
+finish                                                                          
+trans/1 0 0/0 0 0/0 0 0                                                         
+cmo/addatt/MODFN/transauto/VDOUBLE/scalar/vector/user/permanent/x/0.0           
+finish                                                                          
+Trans already complete, nothing done.                                           
+cmo/printatt/MODFN/-xyz-/minmax                                                 
+ATTRIBUTE NAME              MIN               MAX         DIFFERENCE    LENGTH  
+ xic               -3.000000000E+00  3.000000000E+00 6.000000000E+00      1120  
+ yic               -3.000000000E+00  1.487339127E-01 3.148733913E+00      1120  
+ zic               -1.324876303E+00  3.000000000E+00 4.324876303E+00      1120  
+ 
+dump/full_mesh.inp/MODFN                                                        
+dump/avs/full_mesh.inp/MODFN                                                    
+cmo/modatt/-def-/-def-/ioflag/x                                                 
+finish                                                                          
+finish                                                                          
+finish                                                                          
+LaGriT successfully completed                                                   

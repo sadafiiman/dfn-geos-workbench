@@ -1,0 +1,163 @@
+[2026-11-04 12:58:15] INFO: Starting DFNGen
+[2026-11-04 12:58:15] INFO: DFN Generator Input File: dfnGen_output/output_dfnGen_input_clean.dat
+
+[2026-11-04 12:58:15] INFO: 
+[2026-11-04 12:58:15] INFO: Expecting Trend & Plunge (trend clockwise from North; plunge positive downward)
+[2026-11-04 12:58:15] INFO: h: 0.350000
+[2026-11-04 12:58:15] INFO: Shape Families:
+[2026-11-04 12:58:15] INFO: 
+
+Rectangular Family 1:
+[2026-11-04 12:58:15] INFO: Number of Vertices: 4
+[2026-11-04 12:58:15] INFO: Aspect Ratio: 1.000000
+[2026-11-04 12:58:15] INFO: Beta (Rotation Around Normal Vector): 0.000000 rad, 0.000000 deg
+[2026-11-04 12:58:15] INFO: Trend: 0.000000 rad, 0.000000 deg
+[2026-11-04 12:58:15] INFO: Plunge: 0.000000 rad, 0.000000 deg 
+[2026-11-04 12:58:15] INFO: Orientation Distribution: 
+[2026-11-04 12:58:15] INFO: Kappa: 20.000000
+[2026-11-04 12:58:15] INFO: Kappa1: 0.000000
+[2026-11-04 12:58:15] INFO: Kappa2: 0.000000
+[2026-11-04 12:58:15] INFO: Layer: Entire domain
+[2026-11-04 12:58:15] INFO: Region: Entire domain
+[2026-11-04 12:58:15] INFO: Distribution: Constant
+[2026-11-04 12:58:15] INFO: Radius: 2.000000m
+[2026-11-04 12:58:15] INFO: Family Insertion Probability: 0.500000
+[2026-11-04 12:58:15] INFO: 
+
+Rectangular Family 2:
+[2026-11-04 12:58:15] INFO: Number of Vertices: 4
+[2026-11-04 12:58:15] INFO: Aspect Ratio: 1.000000
+[2026-11-04 12:58:15] INFO: Beta (Rotation Around Normal Vector): 0.000000 rad, 0.000000 deg
+[2026-11-04 12:58:15] INFO: Trend: 0.610865 rad, 35.000000 deg
+[2026-11-04 12:58:15] INFO: Plunge: 1.570796 rad, 90.000000 deg 
+[2026-11-04 12:58:15] INFO: Orientation Distribution: 
+[2026-11-04 12:58:15] INFO: Kappa: 20.000000
+[2026-11-04 12:58:15] INFO: Kappa1: 0.000000
+[2026-11-04 12:58:15] INFO: Kappa2: 0.000000
+[2026-11-04 12:58:15] INFO: Layer: Entire domain
+[2026-11-04 12:58:15] INFO: Region: Entire domain
+[2026-11-04 12:58:15] INFO: Distribution: Constant
+[2026-11-04 12:58:15] INFO: Radius: 2.000000m
+[2026-11-04 12:58:15] INFO: Family Insertion Probability: 0.500000
+[2026-11-04 12:58:15] INFO: Building radii lists for nPoly option...
+[2026-11-04 12:58:15] INFO: Building radii lists for nPoly option Complete[2026-11-04 12:58:15] INFO: Rectangular family 1 using constant size
+[2026-11-04 12:58:15] INFO: Rectangular family 2 using constant size
+[2026-11-04 12:58:15] INFO: ========================================================
+[2026-11-04 12:58:15] INFO:             Network Generation Complete
+[2026-11-04 12:58:15] INFO: ========================================================
+[2026-11-04 12:58:15] INFO: Version of DFNGen: 2.2
+[2026-11-04 12:58:15] INFO: Layer Conforming Fractures: perfect conforming
+[2026-11-04 12:58:15] INFO: Time Stamp: Wed Nov  4 12:58:15 2026
+
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+
+[2026-11-04 12:58:15] INFO: Statistics Before Isolated Fractures Removed:
+
+[2026-11-04 12:58:15] INFO: Fractures: 24
+[2026-11-04 12:58:15] INFO: Truncated: 23
+
+[2026-11-04 12:58:15] INFO: Total Surface Area:     449.538064 m^2
+[2026-11-04 12:58:15] INFO: Total Fracture Density   (P30): 0.111111
+[2026-11-04 12:58:15] INFO: Total Fracture Intensity (P32): 2.081195
+[2026-11-04 12:58:15] INFO: Family: 1
+[2026-11-04 12:58:15] INFO:     Accepted: 15
+[2026-11-04 12:58:15] INFO:     Rejected: 11
+[2026-11-04 12:58:15] INFO:     Layer: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Region: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Surface Area: 277.199063 m^2
+[2026-11-04 12:58:15] INFO:     Fracture Intensity (P32): 1.283329
+
+[2026-11-04 12:58:15] INFO: Family: 2
+[2026-11-04 12:58:15] INFO:     Accepted: 9
+[2026-11-04 12:58:15] INFO:     Rejected: 3
+[2026-11-04 12:58:15] INFO:     Layer: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Region: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Surface Area: 172.339001 m^2
+[2026-11-04 12:58:15] INFO:     Fracture Intensity (P32): 0.797866
+
+[2026-11-04 12:58:15] INFO: In cluster groups
+[2026-11-04 12:58:15] INFO: Number of fractures: 24
+[2026-11-04 12:58:15] INFO: Number of groups: 13
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+
+[2026-11-04 12:58:15] INFO: Statistics After Isolated Fractures Removed:
+[2026-11-04 12:58:15] INFO: Final Number of Fractures: 5
+[2026-11-04 12:58:15] INFO: Isolated Fractures Removed: 19
+[2026-11-04 12:58:15] INFO: Fractures before isolated fractures removed:: 24
+
+[2026-11-04 12:58:15] INFO: Total Surface Area:     108.170953 m^2
+[2026-11-04 12:58:15] INFO: Total Fracture Density   (P30): 0.023148
+[2026-11-04 12:58:15] INFO: Total Fracture Intensity (P32): 0.500791
+[2026-11-04 12:58:15] INFO: Family: 1
+[2026-11-04 12:58:15] INFO:     Fractures After Isolated Fracture Removal: 4
+[2026-11-04 12:58:15] INFO:     Isolated Fractures Removed: 11
+[2026-11-04 12:58:15] INFO:     Accepted: 15
+[2026-11-04 12:58:15] INFO:     Rejected: 11
+[2026-11-04 12:58:15] INFO:     Layer: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Region: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Surface Area: 87.725673 m^2
+[2026-11-04 12:58:15] INFO:     Fracture Intensity (P32): 0.406137
+
+[2026-11-04 12:58:15] INFO: Family: 2
+[2026-11-04 12:58:15] INFO:     Fractures After Isolated Fracture Removal: 1
+[2026-11-04 12:58:15] INFO:     Isolated Fractures Removed: 8
+[2026-11-04 12:58:15] INFO:     Accepted: 9
+[2026-11-04 12:58:15] INFO:     Rejected: 3
+[2026-11-04 12:58:15] INFO:     Layer: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Region: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Surface Area: 20.445280 m^2
+[2026-11-04 12:58:15] INFO:     Fracture Intensity (P32): 0.094654
+
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+
+[2026-11-04 12:58:15] INFO: 24 Fractures Accepted (Before Isolated Fracture Removal)
+[2026-11-04 12:58:15] INFO: 5 Final Fractures (After Isolated Fracture Removal)
+
+[2026-11-04 12:58:15] INFO: Total Fractures Rejected: 14
+[2026-11-04 12:58:15] INFO: Total Fractures Re-translated: 190
+[2026-11-04 12:58:15] INFO: Number of Triple Intersection Points (Before Isolated Fracture Removal): 0
+[2026-11-04 12:58:15] INFO: Intersection Statistics:
+[2026-11-04 12:58:15] INFO:     Number of Intersections: 13 
+[2026-11-04 12:58:15] INFO:     Intersections Shortened: 0 
+[2026-11-04 12:58:15] INFO:     Original Intersection (Before Intersection Shrinking) Length: 23.516757 m
+[2026-11-04 12:58:15] INFO:     Intersection Length Discarded: 0.000000 m
+[2026-11-04 12:58:15] INFO:     Final Intersection Length: 23.516757 m
+[2026-11-04 12:58:15] INFO: Rejection Statistics: 
+[2026-11-04 12:58:15] INFO:     23 Short Intersections 
+[2026-11-04 12:58:15] INFO:     1 Close to Node
+[2026-11-04 12:58:15] INFO:     154 Close to Edge
+[2026-11-04 12:58:15] INFO:     0 Vertex Close to Edge
+[2026-11-04 12:58:15] INFO:     0 Outside of Domain
+[2026-11-04 12:58:15] INFO:     6 Triple intersection Rejections
+[2026-11-04 12:58:15] INFO:     20 Intersections Close to Other Intersections
+
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+[2026-11-04 12:58:15] INFO: Fracture Estimation statistics:
+[2026-11-04 12:58:15] INFO: NOTE: If estimation and actual are very different, expected family distributions might not be accurate. If this is the case, try increasing or decreasing the 'radiiListIncrease' option in the input file.
+[2026-11-04 12:58:15] INFO: Rectangular Family 1
+Using constant size
+
+[2026-11-04 12:58:15] INFO: Rectangular Family 2
+Using constant size
+
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+
+[2026-11-04 12:58:15] INFO: Seed: 6969420
+[2026-11-04 12:58:15] INFO: /app/poc/output//dfnGen_output
+[2026-11-04 12:58:15] INFO: Writing Graph Data Files
+[2026-11-04 12:58:15] INFO: Writing Polygon Files
+[2026-11-04 12:58:15] INFO: Writing Polygon Files Complete
+[2026-11-04 12:58:15] INFO: Writing Intersection Files
+[2026-11-04 12:58:15] INFO: Writing poly inp files
+[2026-11-04 12:58:15] INFO: Writing /app/poc/output//dfnGen_output/../params.txt
+[2026-11-04 12:58:15] INFO: Writing Radii File (radii.dat)
+[2026-11-04 12:58:15] INFO: Writing Rejection Statistics File (rejections.dat)
+[2026-11-04 12:58:15] INFO: Writing Family Definitions File (families.dat)
+[2026-11-04 12:58:15] INFO: Writing Fracture Translations File (translations.dat)
+[2026-11-04 12:58:15] INFO: Writing Connectivity Data (connectivity.dat)
+[2026-11-04 12:58:15] INFO: Writing Rotation Data File (poly_info.dat)
+[2026-11-04 12:58:15] INFO: Writing Normal Vectors into File (normal_vectors.dat)
+[2026-11-04 12:58:15] INFO: Writing Rotation Data File (rejectsPerAttempt.dat)
+[2026-11-04 12:58:15] INFO: Writing Boundary Files
+[2026-11-04 12:58:15] INFO: Lagrit Should Remove 44 Nodes (88/2 - 0)
+[2026-11-04 12:58:15] INFO: DFNGen - Complete

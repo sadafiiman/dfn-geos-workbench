@@ -1,0 +1,184 @@
+2026-11-04 13:00:23,911 INFO Initializing logfile: /app/poc/output/output.log
+2026-11-04 13:00:23,912 INFO Starting at 2026-11-04 13:00:23.911999
+2026-11-04 13:00:23,912 INFO 
+===================================================================
+===================================================================
+===================================================================
+||\    _____         \               / ______  _______       /  \ 
+||  \  |     |\     | \             /  |    |  |     | | /  /    \ 
+||   \ |___  | \    |  \    /\     /   |    |  |_____| |/   |  |  |
+||   / |     |   \  |   \  /  \  /     |    |  |   \   |\    \  \ 
+||  /  |     |     \|    \/    \/      |____|  |    \  | \ |  |  |
+||/ ======================================================= \    /
+============================================================  \/
+===================================================================
+
+Program: pydfnWorks v2.10.1 
+Release Date: 09-06-2026
+Install Date: 2026-11-04
+Run time : 2026-11-04 13:00:23.912140
+
+This program was prepared at Los Alamos National Laboratory (LANL),
+Earth and Environmental Sciences Division.
+
+All rights in the program are reserved by the DOE and LANL.
+Permission is granted to the public to copy and use this software
+without charge, provided that this Notice and any statement of
+authorship are reproduced on all copies. Neither the U.S. Government
+nor LANS makes any warranty, express or implied, or assumes
+any liability or responsibility for the use of this software.
+
+Contact Information : dfnworks@lanl.gov
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+LA-CC-17-027
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(or copyright) 2018 Triad National Security, LLC. All rights reserved.
+ 
+This program was produced under U.S. Government contract 89233218CNA000001
+for Los Alamos National Laboratory (LANL), which is operated by Triad 
+National Security, LLC for the U.S. Department of Energy/National Nuclear
+Security Administration.
+
+This is free software; you can redistribute it and/or modify it under the
+terms of the GNU Lesser General Public License as published by the Free
+Software Foundation; either version 3.0 of the License, or (at your option)
+any later version. If software is modified to produce derivative works,
+such modified software should be clearly marked, so as not to confuse it with
+the version available from LANL.
+
+All rights in the program are reserved by Triad National Security, LLC, 
+and the U.S. Department of Energy/National Nuclear Security Administration.
+The Government is granted for itself and others acting on its behalf a 
+nonexclusive, paid-up, irrevocable worldwide license in this material 
+to reproduce, prepare derivative works, distribute copies to the public,
+perform publicly and display publicly, and to permit others to do so.
+
+The U.S. Government has rights to use, reproduce, and distribute this software.  
+NEITHER THE GOVERNMENT NOR TRIAD NATIONAL SECURITY, LLC MAKES ANY WARRANTY, 
+EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  
+If software is modified to  produce derivative works, such modified 
+software should be clearly marked, so as not to confuse it with the 
+version available from LANL.
+
+Additionally, this program is free software; you can redistribute it and/or 
+modify it under the terms of the GNU General Public License as published by the 
+Free Software Foundation; either version 2 of the License, or (at your option) 
+any later version. Accordingly, this program is distributed in the hope that it 
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public 
+License for more details.
+ 
+Additionally, redistribution and use in source and binary forms, with or 
+without modification, are permitted provided that the following conditions are 
+met:
+1.       Redistributions of source code must retain the above copyright notice, 
+this list of conditions and the following disclaimer.
+
+2.      Redistributions in binary form must reproduce the above copyright 
+notice, this list of conditions and the following disclaimer in the 
+documentation and/or other materials provided with the distribution.
+
+3.      Neither the name of Los Alamos National Security, LLC, Los Alamos 
+National Laboratory, LANL, the U.S. Government, nor the names of its 
+contributors may be used to endorse or promote products derived from this 
+software without specific prior written permission.
+ 
+THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND 
+CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A 
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS NATIONAL 
+SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR 
+BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER 
+IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+POSSIBILITY OF SUCH DAMAGE.
+
+2026-11-04 13:00:23,912 INFO --> Creating DFN Object: Starting
+2026-11-04 13:00:23,912 INFO --> Loading and checking dfnWorks dependency paths
+2026-11-04 13:00:23,912 INFO dfnWorks paths:
+2026-11-04 13:00:23,912 INFO ---------------
+2026-11-04 13:00:23,912 INFO * dfnworks_PATH: /dfnWorks/bin/
+2026-11-04 13:00:23,912 INFO * LAGRIT_EXE: /dfnWorks/bin/lagrit
+2026-11-04 13:00:23,912 INFO * PETSC_DIR: /dfnWorks/lib/petsc
+2026-11-04 13:00:23,912 INFO * PETSC_ARCH: arch-linux-c-opt
+2026-11-04 13:00:23,912 INFO * PFLOTRAN_EXE: /dfnWorks/bin/pflotran
+2026-11-04 13:00:23,912 INFO * FEHM_EXE: /dfnWorks/bin/fehm
+
+2026-11-04 13:00:23,912 INFO --> Loading and checking dfnWorks dependency paths successful
+2026-11-04 13:00:23,912 INFO ================================================================================
+
+2026-11-04 13:00:23,912 INFO --> Jobname: /app/poc/output
+2026-11-04 13:00:23,912 INFO --> Local Jobname: output
+2026-11-04 13:00:23,913 INFO --> Number of Processors Requested: 4
+2026-11-04 13:00:23,913 INFO --> dfnGen filename : output_dfnGen_input.dat
+2026-11-04 13:00:23,913 INFO --> Local dfnGen filename : output_dfnGen_input.dat
+2026-11-04 13:00:23,913 INFO ================================================================================
+
+2026-11-04 13:00:23,913 INFO * Checking input paths: Starting
+2026-11-04 13:00:23,913 INFO * Checking input paths: Complete
+2026-11-04 13:00:23,913 INFO --> Creating DFN Object: Complete
+2026-11-04 13:00:23,913 INFO --> Parsing params.txt file
+2026-11-04 13:00:23,913 INFO --> Number of Fractures: 5
+2026-11-04 13:00:23,913 INFO --> h: 3.50e-01 m
+2026-11-04 13:00:23,913 INFO --> Visual mode is off
+2026-11-04 13:00:23,913 INFO --> Expected Number of dudded points: 44
+2026-11-04 13:00:23,913 INFO --> X Domain Size 6.0 m
+2026-11-04 13:00:23,913 INFO --> Y Domain Size 6.0 m
+2026-11-04 13:00:23,913 INFO --> Z Domain Size 6.0 m
+2026-11-04 13:00:23,913 INFO --> Parsing params.txt complete
+
+2026-11-04 13:00:23,914 INFO --> Parsing dfnWorks output and adding to object
+2026-11-04 13:00:23,914 INFO --> Parsing params.txt file
+2026-11-04 13:00:23,914 INFO --> Number of Fractures: 5
+2026-11-04 13:00:23,914 INFO --> h: 3.50e-01 m
+2026-11-04 13:00:23,914 INFO --> Visual mode is off
+2026-11-04 13:00:23,914 INFO --> Expected Number of dudded points: 44
+2026-11-04 13:00:23,914 INFO --> X Domain Size 6.0 m
+2026-11-04 13:00:23,914 INFO --> Y Domain Size 6.0 m
+2026-11-04 13:00:23,914 INFO --> Z Domain Size 6.0 m
+2026-11-04 13:00:23,914 INFO --> Parsing params.txt complete
+
+2026-11-04 13:00:23,917 INFO --> Loading Polygon information onto DFN object
+2026-11-04 13:00:23,919 INFO --> Data from polygons.dat stored on class in self.polygons
+
+2026-11-04 13:00:23,929 INFO ================================================================================
+2026-11-04 13:00:23,929 INFO Creating conforming DFM mesh using LaGriT : Starting
+2026-11-04 13:00:23,929 INFO ================================================================================
+2026-11-04 13:00:23,940 INFO --> Working directory is now /app/poc/output/dfm_mesh
+2026-11-04 13:00:23,940 INFO --> Setting up DFM meshing directory complete
+2026-11-04 13:00:23,940 INFO --> Running: /dfnWorks/bin/lagrit < translate_mesh.lgi -log translate_mesh.lgi.log -out translate_mesh.lgi.out
+2026-11-04 13:00:24,056 INFO --> LaGriT script translate_mesh.lgi ran successfully
+2026-11-04 13:00:24,057 INFO Creating dfm_mesh_fracture_driver.lgi file: Complete
+
+2026-11-04 13:00:24,057 INFO Creating dfm_box_dimensions.mlgi file: Complete
+
+2026-11-04 13:00:24,057 INFO Creating dfm_box_dimensions.mlgi file: Complete
+
+2026-11-04 13:00:24,057 INFO Creating dfm_extract_fracture_facets.mlgi file: Complete
+
+2026-11-04 13:00:24,057 INFO Creating dfm_extract_facets.mlgi file: Complete
+
+2026-11-04 13:00:24,057 INFO Creating dfm_diagonstics.mlgi file: Complete
+
+2026-11-04 13:00:24,057 INFO --> Running: /dfnWorks/bin/lagrit < dfm_mesh_fracture_driver.lgi -log dfm_mesh_fracture_driver.lgi.log -out dfm_mesh_fracture_driver.lgi.out
+2026-11-04 13:00:45,847 INFO --> LaGriT script dfm_mesh_fracture_driver.lgi ran successfully
+2026-11-04 13:00:45,847 INFO --> Checking for missing elements
+2026-11-04 13:00:45,847 INFO --> Missing elements have been found.
+2026-11-04 13:00:45,847 INFO --> Missing elements are in the file 'missed_cells_full_mesh.inp' if you want to see them.
+2026-11-04 13:00:45,847 INFO --> Out of 1948 elements in the DFN there are 60 missing from the DFM.
+2026-11-04 13:00:45,847 INFO --> That's 3.08 percent of the mesh.
+2026-11-04 13:00:45,847 INFO --> Doesn't seem to bad. Keep Calm and Carry on.
+2026-11-04 13:00:45,848 INFO --> Running: /dfnWorks/bin/lagrit < translate_mesh.lgi -log translate_mesh.lgi.log -out translate_mesh.lgi.out
+2026-11-04 13:00:46,018 INFO --> LaGriT script translate_mesh.lgi ran successfully
+2026-11-04 13:00:46,018 INFO --> Cleaning up working directory
+2026-11-04 13:00:46,028 INFO --> Cleaning up working directory: Complete
+2026-11-04 13:00:46,028 INFO ================================================================================
+2026-11-04 13:00:46,028 INFO Creating conforming DFM mesh using LaGriT : Complete
+2026-11-04 13:00:46,028 INFO ================================================================================

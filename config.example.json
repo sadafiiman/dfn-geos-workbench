@@ -1,0 +1,12 @@
+{
+    "dfnworks_path": "../dfnWorks",
+    "lagrit_exe": "tools/lagrit",
+    "geos_exe": "",
+    "python_exe": "",
+    "use_compat_pythonpath": true,
+    "dfnworks_docker_image": "ees16/dfnworks:latest",
+    "dfnworks_backend": "auto",
+    "geos_backend": "native",
+    "geos_docker_image": "",
+    "panel_port": 8765
+}

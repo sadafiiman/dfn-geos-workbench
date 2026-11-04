@@ -1,0 +1,142 @@
+<?xml version="1.0" ?>
+<Problem>
+  <Solvers
+      gravityVector="{ 0.0, 0.0, -9.81 }">
+    <SinglePhaseFVM
+      name="SinglePhaseFlow"
+      logLevel="1"
+      discretization="singlePhaseTPFA"
+      targetRegions="{ Region, Fracture }">
+      <NonlinearSolverParameters
+        newtonTol="1.0e-4"
+        newtonMaxIter="10"/>
+      <LinearSolverParameters
+        directParallel="0"/>
+    </SinglePhaseFVM>
+  </Solvers>
+
+  <Mesh>
+    <!-- Multi-block mesh converted from dfnWorks (LaGriT DFM mesh):
+         'main'     = surrounding rock matrix (tetrahedra)
+         'fracture' = explicit fracture surface (triangles, collocated) -->
+    <VTKMesh
+      name="dfnMesh"
+      file="case.vtm"
+      useGlobalIds="1"
+      faceBlocks="{ fracture }"
+      surfacicFieldsToImport="{ fracture_id, aperture }"
+      surfacicFieldsInGEOS="{ fractureId, elementAperture }"/>
+  </Mesh>
+
+  <Geometry>
+    <Box name="xin"  xMin="{ -3.1212000000040807, -3.121200000000081, -3.121200000000081 }"
+                     xMax="{ -2.998800000003999, 3.121200000000081, 3.121200000001081 }"/>
+    <Box name="xout" xMin="{ 2.9987999999999992, -3.121200000000081, -3.121200000000081 }"
+                     xMax="{ 3.121200000000081, 3.121200000000081, 3.121200000001081 }"/>
+  </Geometry>
+
+  <Events maxTime="50000">
+    <PeriodicEvent name="solverApplications"
+                   forceDt="1e3"
+                   target="/Solvers/SinglePhaseFlow"/>
+    <PeriodicEvent name="outputs"
+                   timeFrequency="1e4"
+                   target="/Outputs/vtkOutput"/>
+  </Events>
+
+  <NumericalMethods>
+    <FiniteVolume>
+      <TwoPointFluxApproximation name="singlePhaseTPFA"/>
+    </FiniteVolume>
+  </NumericalMethods>
+
+  <ElementRegions>
+    <CellElementRegion
+      name="Region"
+      cellBlocks="{ * }"
+      materialList="{ water, rock }"/>
+    <SurfaceElementRegion
+      name="Fracture"
+      faceBlock="fracture"
+      defaultAperture="1.000000e-04"
+      materialList="{ water, fractureFilling }"/>
+  </ElementRegions>
+
+  <Constitutive>
+    <CompressibleSinglePhaseFluid
+      name="water"
+      defaultDensity="1000"
+      defaultViscosity="0.001"
+      referencePressure="0.0"
+      compressibility="5e-10"
+      viscosibility="0.0"/>
+
+    <CompressibleSolidConstantPermeability
+      name="rock"
+      solidModelName="nullSolid"
+      porosityModelName="rockPorosity"
+      permeabilityModelName="rockPerm"/>
+
+    <CompressibleSolidParallelPlatesPermeability
+      name="fractureFilling"
+      solidModelName="nullSolid"
+      porosityModelName="fracturePorosity"
+      permeabilityModelName="fracturePerm"/>
+
+    <NullModel name="nullSolid"/>
+
+    <PressurePorosity
+      name="rockPorosity"
+      defaultReferencePorosity="0.01"
+      referencePressure="0.0"
+      compressibility="1.0e-9"/>
+
+    <ConstantPermeability
+      name="rockPerm"
+      permeabilityComponents="{ 5.0e-19, 5.0e-19, 5.0e-19 }"/>
+
+    <PressurePorosity
+      name="fracturePorosity"
+      defaultReferencePorosity="1.00"
+      referencePressure="0.0"
+      compressibility="0.0"/>
+
+    <ParallelPlatesPermeability name="fracturePerm"/>
+  </Constitutive>
+
+  <FieldSpecifications>
+    <FieldSpecification
+      name="initialPressure"
+      initialCondition="1"
+      setNames="{ all }"
+      objectPath="ElementRegions/Region"
+      fieldName="pressure"
+      scale="0.0"/>
+
+    <FieldSpecification
+      name="initialFracturePressure"
+      initialCondition="1"
+      setNames="{ all }"
+      objectPath="ElementRegions/Fracture"
+      fieldName="pressure"
+      scale="0.0"/>
+
+    <FieldSpecification
+      name="source"
+      objectPath="ElementRegions/Fracture"
+      fieldName="pressure"
+      scale="2.0e6"
+      setNames="{ xin }"/>
+
+    <FieldSpecification
+      name="sink"
+      objectPath="ElementRegions/Fracture"
+      fieldName="pressure"
+      scale="1.0e6"
+      setNames="{ xout }"/>
+  </FieldSpecifications>
+
+  <Outputs>
+    <VTK name="vtkOutput" format="ascii" plotFileRoot="dfn_fracture_flow"/>
+  </Outputs>
+</Problem>

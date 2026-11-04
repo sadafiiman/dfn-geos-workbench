@@ -1,0 +1,775 @@
+2026-11-04 12:58:15,838 INFO Initializing logfile: /app/output.log
+2026-11-04 12:58:15,839 INFO Starting at 2026-11-04 12:58:15.839185
+2026-11-04 12:58:15,839 INFO 
+===================================================================
+===================================================================
+===================================================================
+||\    _____         \               / ______  _______       /  \ 
+||  \  |     |\     | \             /  |    |  |     | | /  /    \ 
+||   \ |___  | \    |  \    /\     /   |    |  |_____| |/   |  |  |
+||   / |     |   \  |   \  /  \  /     |    |  |   \   |\    \  \ 
+||  /  |     |     \|    \/    \/      |____|  |    \  | \ |  |  |
+||/ ======================================================= \    /
+============================================================  \/
+===================================================================
+
+Program: pydfnWorks v2.10.1 
+Release Date: 09-06-2026
+Install Date: 2026-11-04
+Run time : 2026-11-04 12:58:15.839299
+
+This program was prepared at Los Alamos National Laboratory (LANL),
+Earth and Environmental Sciences Division.
+
+All rights in the program are reserved by the DOE and LANL.
+Permission is granted to the public to copy and use this software
+without charge, provided that this Notice and any statement of
+authorship are reproduced on all copies. Neither the U.S. Government
+nor LANS makes any warranty, express or implied, or assumes
+any liability or responsibility for the use of this software.
+
+Contact Information : dfnworks@lanl.gov
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+LA-CC-17-027
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(or copyright) 2018 Triad National Security, LLC. All rights reserved.
+ 
+This program was produced under U.S. Government contract 89233218CNA000001
+for Los Alamos National Laboratory (LANL), which is operated by Triad 
+National Security, LLC for the U.S. Department of Energy/National Nuclear
+Security Administration.
+
+This is free software; you can redistribute it and/or modify it under the
+terms of the GNU Lesser General Public License as published by the Free
+Software Foundation; either version 3.0 of the License, or (at your option)
+any later version. If software is modified to produce derivative works,
+such modified software should be clearly marked, so as not to confuse it with
+the version available from LANL.
+
+All rights in the program are reserved by Triad National Security, LLC, 
+and the U.S. Department of Energy/National Nuclear Security Administration.
+The Government is granted for itself and others acting on its behalf a 
+nonexclusive, paid-up, irrevocable worldwide license in this material 
+to reproduce, prepare derivative works, distribute copies to the public,
+perform publicly and display publicly, and to permit others to do so.
+
+The U.S. Government has rights to use, reproduce, and distribute this software.  
+NEITHER THE GOVERNMENT NOR TRIAD NATIONAL SECURITY, LLC MAKES ANY WARRANTY, 
+EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  
+If software is modified to  produce derivative works, such modified 
+software should be clearly marked, so as not to confuse it with the 
+version available from LANL.
+
+Additionally, this program is free software; you can redistribute it and/or 
+modify it under the terms of the GNU General Public License as published by the 
+Free Software Foundation; either version 2 of the License, or (at your option) 
+any later version. Accordingly, this program is distributed in the hope that it 
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public 
+License for more details.
+ 
+Additionally, redistribution and use in source and binary forms, with or 
+without modification, are permitted provided that the following conditions are 
+met:
+1.       Redistributions of source code must retain the above copyright notice, 
+this list of conditions and the following disclaimer.
+
+2.      Redistributions in binary form must reproduce the above copyright 
+notice, this list of conditions and the following disclaimer in the 
+documentation and/or other materials provided with the distribution.
+
+3.      Neither the name of Los Alamos National Security, LLC, Los Alamos 
+National Laboratory, LANL, the U.S. Government, nor the names of its 
+contributors may be used to endorse or promote products derived from this 
+software without specific prior written permission.
+ 
+THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND 
+CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A 
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS NATIONAL 
+SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR 
+BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER 
+IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+POSSIBILITY OF SUCH DAMAGE.
+
+2026-11-04 12:58:15,839 INFO --> Creating DFN Object: Starting
+2026-11-04 12:58:15,839 INFO --> Loading and checking dfnWorks dependency paths
+2026-11-04 12:58:15,839 INFO dfnWorks paths:
+2026-11-04 12:58:15,839 INFO ---------------
+2026-11-04 12:58:15,839 INFO * dfnworks_PATH: /dfnWorks/bin/
+2026-11-04 12:58:15,839 INFO * LAGRIT_EXE: /dfnWorks/bin/lagrit
+2026-11-04 12:58:15,839 INFO * PETSC_DIR: /dfnWorks/lib/petsc
+2026-11-04 12:58:15,839 INFO * PETSC_ARCH: arch-linux-c-opt
+2026-11-04 12:58:15,839 INFO * PFLOTRAN_EXE: /dfnWorks/bin/pflotran
+2026-11-04 12:58:15,839 INFO * FEHM_EXE: /dfnWorks/bin/fehm
+
+2026-11-04 12:58:15,839 INFO --> Loading and checking dfnWorks dependency paths successful
+2026-11-04 12:58:15,840 INFO ================================================================================
+
+2026-11-04 12:58:15,840 INFO --> Jobname: /app/poc/output
+2026-11-04 12:58:15,840 INFO --> Local Jobname: output
+2026-11-04 12:58:15,840 INFO --> Number of Processors Requested: 4
+2026-11-04 12:58:15,840 INFO --> dfnGen filename : output_dfnGen_input.dat
+2026-11-04 12:58:15,840 INFO --> Local dfnGen filename : output_dfnGen_input.dat
+2026-11-04 12:58:15,840 INFO ================================================================================
+
+2026-11-04 12:58:15,840 INFO * Checking input paths: Starting
+2026-11-04 12:58:15,840 INFO * Checking input paths: Complete
+2026-11-04 12:58:15,840 INFO --> Creating DFN Object: Complete
+2026-11-04 12:58:15,840 INFO --> Adding new facture family
+2026-11-04 12:58:15,840 INFO Orientation_distribution of fisher.
+
+2026-11-04 12:58:15,840 INFO --> Family information for family # 1
+2026-11-04 12:58:15,840 INFO Name: number                                  Value: None
+2026-11-04 12:58:15,841 INFO Name: probability                             Value: 1.0
+2026-11-04 12:58:15,841 INFO Name: type                                    Value: {'rect': True, 'ellipse': False}
+2026-11-04 12:58:15,841 INFO Name: layer                                   Value: 0
+2026-11-04 12:58:15,841 INFO Name: region                                  Value: 0
+2026-11-04 12:58:15,841 INFO Name: p32                                     Value: None
+2026-11-04 12:58:15,841 INFO Name: aspect                                  Value: 1.0
+2026-11-04 12:58:15,841 INFO Name: number_of_points                        Value: 4
+2026-11-04 12:58:15,841 INFO Name: beta_distribution                       Value: 1
+2026-11-04 12:58:15,841 INFO Name: beta                                    Value: 0.0
+2026-11-04 12:58:15,841 INFO Name: orientation_distribution                Value: fisher
+2026-11-04 12:58:15,841 INFO Name: fisher                                  Value: {'theta': None, 'phi': None, 'strike': None, 'dip': None, 'trend': 0.0, 'plunge': 0.0, 'kappa': 20.0, 'kappa1': 0, 'kappa2': 0}
+2026-11-04 12:58:15,841 INFO Name: bingham                                 Value: {'theta': None, 'phi': None, 'strike': None, 'dip': None, 'trend': None, 'plunge': None, 'kappa1': None, 'kappa2': None}
+2026-11-04 12:58:15,841 INFO Name: distribution                            Value: {'tpl': False, 'log_normal': False, 'exp': False, 'constant': True}
+2026-11-04 12:58:15,841 INFO Name: tpl                                     Value: {'alpha': None}
+2026-11-04 12:58:15,841 INFO Name: log_normal                              Value: {'mean': None, 'std': None}
+2026-11-04 12:58:15,841 INFO Name: exp                                     Value: {'mean': None}
+2026-11-04 12:58:15,841 INFO Name: constant                                Value: 2.0
+2026-11-04 12:58:15,841 INFO Name: min_radius                              Value: None
+2026-11-04 12:58:15,842 INFO Name: max_radius                              Value: None
+2026-11-04 12:58:15,842 INFO Name: hydraulic_properties : variable : transmissivity
+2026-11-04 12:58:15,842 INFO Name: hydraulic_properties : function : correlated
+2026-11-04 12:58:15,842 INFO Name: hydraulic_properties : params : {'alpha': 1e-13, 'beta': 1}
+2026-11-04 12:58:15,842 INFO --> Adding new facture family
+2026-11-04 12:58:15,842 INFO Orientation_distribution of fisher.
+
+2026-11-04 12:58:15,842 INFO --> Family information for family # 2
+2026-11-04 12:58:15,842 INFO Name: number                                  Value: None
+2026-11-04 12:58:15,842 INFO Name: probability                             Value: 1.0
+2026-11-04 12:58:15,842 INFO Name: type                                    Value: {'rect': True, 'ellipse': False}
+2026-11-04 12:58:15,842 INFO Name: layer                                   Value: 0
+2026-11-04 12:58:15,842 INFO Name: region                                  Value: 0
+2026-11-04 12:58:15,842 INFO Name: p32                                     Value: None
+2026-11-04 12:58:15,842 INFO Name: aspect                                  Value: 1.0
+2026-11-04 12:58:15,842 INFO Name: number_of_points                        Value: 4
+2026-11-04 12:58:15,842 INFO Name: beta_distribution                       Value: 1
+2026-11-04 12:58:15,842 INFO Name: beta                                    Value: 0.0
+2026-11-04 12:58:15,842 INFO Name: orientation_distribution                Value: fisher
+2026-11-04 12:58:15,842 INFO Name: fisher                                  Value: {'theta': None, 'phi': None, 'strike': None, 'dip': None, 'trend': 35.0, 'plunge': 90.0, 'kappa': 20.0, 'kappa1': 0, 'kappa2': 0}
+2026-11-04 12:58:15,843 INFO Name: bingham                                 Value: {'theta': None, 'phi': None, 'strike': None, 'dip': None, 'trend': None, 'plunge': None, 'kappa1': None, 'kappa2': None}
+2026-11-04 12:58:15,843 INFO Name: distribution                            Value: {'tpl': False, 'log_normal': False, 'exp': False, 'constant': True}
+2026-11-04 12:58:15,843 INFO Name: tpl                                     Value: {'alpha': None}
+2026-11-04 12:58:15,843 INFO Name: log_normal                              Value: {'mean': None, 'std': None}
+2026-11-04 12:58:15,843 INFO Name: exp                                     Value: {'mean': None}
+2026-11-04 12:58:15,843 INFO Name: constant                                Value: 2.0
+2026-11-04 12:58:15,843 INFO Name: min_radius                              Value: None
+2026-11-04 12:58:15,843 INFO Name: max_radius                              Value: None
+2026-11-04 12:58:15,843 INFO Name: hydraulic_properties : variable : transmissivity
+2026-11-04 12:58:15,843 INFO Name: hydraulic_properties : function : correlated
+2026-11-04 12:58:15,843 INFO Name: hydraulic_properties : params : {'alpha': 1e-13, 'beta': 1}
+2026-11-04 12:58:15,852 INFO --> Creating directory /app/poc/output/
+2026-11-04 12:58:15,852 INFO Making subdirectory: dfnGen_output
+2026-11-04 12:58:15,852 INFO Making subdirectory: dfnGen_output/radii
+2026-11-04 12:58:15,852 INFO Making subdirectory: intersections
+2026-11-04 12:58:15,852 INFO Making subdirectory: polys
+2026-11-04 12:58:15,852 INFO Current directory is now: /app/poc/output
+2026-11-04 12:58:15,852 INFO Jobname is /app/poc/output/
+2026-11-04 12:58:15,852 INFO ================================================================================
+2026-11-04 12:58:15,852 INFO Checking Input File
+
+2026-11-04 12:58:15,853 INFO Fracture Family order was not changed
+2026-11-04 12:58:15,853 INFO --> Clean output file name: dfnGen_output/output_dfnGen_input_clean.dat
+2026-11-04 12:58:15,853 INFO --> Checking General Parameters: Starting
+2026-11-04 12:58:15,853 WARNING --> Warning while parsing input
+
+* 'famProb' probabilities did not sum to 1. They have been re-scaled accordingly
+* Be careful out there *
+
+2026-11-04 12:58:15,853 INFO --> New Values: [0.5, 0.5]
+
+2026-11-04 12:58:15,853 WARNING --> Warning while parsing input
+
+No value for disableFram or FramOn provided. Using defaults. --> FRAM ON <--
+* Be careful out there *
+
+2026-11-04 12:58:15,853 INFO --> Checking General Parameters: Complete
+2026-11-04 12:58:15,853 INFO 
+--> Checking Rectangle Family Parameters
+2026-11-04 12:58:15,853 INFO 
+--> Checking Aspect Ratios: Starting
+2026-11-04 12:58:15,853 INFO --> Checking Aspect Ratios: Complete
+2026-11-04 12:58:15,853 INFO 
+--> Checking Fracture Layers: Starting
+2026-11-04 12:58:15,853 INFO --> Checking Fracture Layers: Complete
+2026-11-04 12:58:15,853 INFO 
+--> Checking Fracture Regions: Starting
+2026-11-04 12:58:15,853 INFO --> Checking Fracture Regions: Complete
+2026-11-04 12:58:15,853 INFO 
+--> Checking Fracture Regions/Layers: Starting
+2026-11-04 12:58:15,853 INFO --> Checking Fracture Regions/Layers: Complete
+2026-11-04 12:58:15,853 INFO 
+--> Checking Family Orientation Parameters: Starting
+2026-11-04 12:58:15,854 INFO * Checking Kappa Values > 0
+2026-11-04 12:58:15,854 INFO * Checking Kappa1 & Kappa2 < 0
+2026-11-04 12:58:15,854 INFO --> Checking Family Orientation Parameters: Complete
+2026-11-04 12:58:15,854 INFO 
+--> Checking Beta Parameters: Starting
+2026-11-04 12:58:15,854 INFO --> Checking Beta Parameters: Complete
+2026-11-04 12:58:15,854 INFO 
+--> Checking Length Distributions: Starting
+2026-11-04 12:58:15,854 INFO --> Checking Length Distributions: Complete
+2026-11-04 12:58:15,854 INFO 
+--> Checking Angle Option: Starting
+2026-11-04 12:58:15,854 INFO * Converting angleOption value from degree to 1 for dfnGen input
+2026-11-04 12:58:15,854 INFO --> Checking Angle Option: Complete
+2026-11-04 12:58:15,854 WARNING --> Warning while parsing input
+
+Provided value  of "h" (3.50e-01) is greater 1/10th the minimum fracture size (2.00e+00). The generated mesh will be very coarse and there will likely be a high rate of fracture rejection.
+* Be careful out there *
+
+2026-11-04 12:58:15,855 INFO 
+--> Writing parameters to file dfnGen_output/output_dfnGen_input_clean.dat : Starting
+2026-11-04 12:58:15,855 INFO --> Writing parameters to file dfnGen_output/output_dfnGen_input_clean.dat : Complete
+2026-11-04 12:58:15,856 INFO Checking Input File Complete
+2026-11-04 12:58:15,856 INFO ================================================================================
+2026-11-04 12:58:15,856 INFO ================================================================================
+2026-11-04 12:58:15,856 INFO --> dfnGen input parameters
+2026-11-04 12:58:15,856 INFO ================================================================================
+2026-11-04 12:58:15,856 INFO Name                                    Value
+2026-11-04 12:58:15,856 INFO ----------------------------            ---------------
+2026-11-04 12:58:15,856 INFO Name: nPoly                             Value: 24
+2026-11-04 12:58:15,856 INFO Name: domainSize                        Value: [6.0, 6.0, 6.0]
+2026-11-04 12:58:15,857 INFO Name: domainSizeIncrease                Value: [0, 0, 0]
+2026-11-04 12:58:15,857 INFO Name: domainCenter                      Value: [0, 0, 0]
+2026-11-04 12:58:15,857 INFO Name: boundaryFaces                     Value: [1, 1, 0, 0, 0, 0]
+2026-11-04 12:58:15,857 INFO Name: insertUserRectanglesFirst         Value: True
+2026-11-04 12:58:15,857 INFO Name: keepOnlyLargestCluster            Value: True
+2026-11-04 12:58:15,857 INFO Name: layerConformingFractures          Value: 1
+2026-11-04 12:58:15,857 INFO Name: h                                 Value: 0.35
+2026-11-04 12:58:15,857 INFO Name: seed                              Value: 6969420
+2026-11-04 12:58:15,857 INFO Name: orientationOption                 Value: 1
+2026-11-04 12:58:15,858 INFO Name: framOn                            Value: True
+2026-11-04 12:58:15,858 INFO Name: radiiListIncrease                 Value: 0.1
+2026-11-04 12:58:15,858 INFO Name: rejectsPerFracture                Value: 10
+2026-11-04 12:58:15,858 INFO Name: famProb                           Value: [0.5, 0.5]
+2026-11-04 12:58:15,858 INFO Name: nFracFam                          Value: 2
+2026-11-04 12:58:15,858 INFO Name: angleOption                       Value: 1
+2026-11-04 12:58:15,858 INFO Name: nFamRect                          Value: 2
+2026-11-04 12:58:15,858 INFO Name: rLayer                            Value: [0, 0]
+2026-11-04 12:58:15,858 INFO Name: rRegion                           Value: [0, 0]
+2026-11-04 12:58:15,859 INFO Name: rdistr                            Value: [4, 4]
+2026-11-04 12:58:15,859 INFO Name: rbetaDistribution                 Value: [1, 1]
+2026-11-04 12:58:15,859 INFO Name: rorientation_distribution         Value: [0, 0]
+2026-11-04 12:58:15,859 INFO Name: rbeta                             Value: [0.0, 0.0]
+2026-11-04 12:58:15,859 INFO Name: raspect                           Value: [1.0, 1.0]
+2026-11-04 12:58:15,859 INFO Name: rtrend                            Value: [0.0, 35.0]
+2026-11-04 12:58:15,859 INFO Name: rplunge                           Value: [0.0, 90.0]
+2026-11-04 12:58:15,859 INFO Name: rkappa                            Value: [20.0, 20.0]
+2026-11-04 12:58:15,859 INFO Name: rkappa1                           Value: [0.0, 0.0]
+2026-11-04 12:58:15,860 INFO Name: rkappa2                           Value: [0.0, 0.0]
+2026-11-04 12:58:15,860 INFO Name: rconst                            Value: [2.0, 2.0]
+2026-11-04 12:58:15,860 INFO Name: minimum_fracture_size             Value: 2.0
+2026-11-04 12:58:15,860 INFO ================================================================================
+2026-11-04 12:58:15,860 INFO --> Running DFNGEN
+2026-11-04 12:58:15,860 INFO Running: >> /dfnWorks/bin/DFNGen dfnGen_output/output_dfnGen_input_clean.dat /app/poc/output/
+2026-11-04 12:58:15,872 INFO -->Opening dfnGen LogFile...
+
+2026-11-04 12:58:15,873 INFO [2026-11-04 12:58:15] INFO: Starting DFNGen
+[2026-11-04 12:58:15] INFO: DFN Generator Input File: dfnGen_output/output_dfnGen_input_clean.dat
+
+[2026-11-04 12:58:15] INFO: 
+[2026-11-04 12:58:15] INFO: Expecting Trend & Plunge (trend clockwise from North; plunge positive downward)
+[2026-11-04 12:58:15] INFO: h: 0.350000
+[2026-11-04 12:58:15] INFO: Shape Families:
+[2026-11-04 12:58:15] INFO: 
+
+Rectangular Family 1:
+[2026-11-04 12:58:15] INFO: Number of Vertices: 4
+[2026-11-04 12:58:15] INFO: Aspect Ratio: 1.000000
+[2026-11-04 12:58:15] INFO: Beta (Rotation Around Normal Vector): 0.000000 rad, 0.000000 deg
+[2026-11-04 12:58:15] INFO: Trend: 0.000000 rad, 0.000000 deg
+[2026-11-04 12:58:15] INFO: Plunge: 0.000000 rad, 0.000000 deg 
+[2026-11-04 12:58:15] INFO: Orientation Distribution: 
+[2026-11-04 12:58:15] INFO: Kappa: 20.000000
+[2026-11-04 12:58:15] INFO: Kappa1: 0.000000
+[2026-11-04 12:58:15] INFO: Kappa2: 0.000000
+[2026-11-04 12:58:15] INFO: Layer: Entire domain
+[2026-11-04 12:58:15] INFO: Region: Entire domain
+[2026-11-04 12:58:15] INFO: Distribution: Constant
+[2026-11-04 12:58:15] INFO: Radius: 2.000000m
+[2026-11-04 12:58:15] INFO: Family Insertion Probability: 0.500000
+[2026-11-04 12:58:15] INFO: 
+
+Rectangular Family 2:
+[2026-11-04 12:58:15] INFO: Number of Vertices: 4
+[2026-11-04 12:58:15] INFO: Aspect Ratio: 1.000000
+[2026-11-04 12:58:15] INFO: Beta (Rotation Around Normal Vector): 0.000000 rad, 0.000000 deg
+[2026-11-04 12:58:15] INFO: Trend: 0.610865 rad, 35.000000 deg
+[2026-11-04 12:58:15] INFO: Plunge: 1.570796 rad, 90.000000 deg 
+[2026-11-04 12:58:15] INFO: Orientation Distribution: 
+[2026-11-04 12:58:15] INFO: Kappa: 20.000000
+[2026-11-04 12:58:15] INFO: Kappa1: 0.000000
+[2026-11-04 12:58:15] INFO: Kappa2: 0.000000
+[2026-11-04 12:58:15] INFO: Layer: Entire domain
+[2026-11-04 12:58:15] INFO: Region: Entire domain
+[2026-11-04 12:58:15] INFO: Distribution: Constant
+[2026-11-04 12:58:15] INFO: Radius: 2.000000m
+[2026-11-04 12:58:15] INFO: Family Insertion Probability: 0.500000
+[2026-11-04 12:58:15] INFO: Building radii lists for nPoly option...
+[2026-11-04 12:58:15] INFO: Building radii lists for nPoly option Complete[2026-11-04 12:58:15] INFO: Rectangular family 1 using constant size
+[2026-11-04 12:58:15] INFO: Rectangular family 2 using constant size
+[2026-11-04 12:58:15] INFO: ========================================================
+[2026-11-04 12:58:15] INFO:             Network Generation Complete
+[2026-11-04 12:58:15] INFO: ========================================================
+[2026-11-04 12:58:15] INFO: Version of DFNGen: 2.2
+[2026-11-04 12:58:15] INFO: Layer Conforming Fractures: perfect conforming
+[2026-11-04 12:58:15] INFO: Time Stamp: Wed Nov  4 12:58:15 2026
+
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+
+[2026-11-04 12:58:15] INFO: Statistics Before Isolated Fractures Removed:
+
+[2026-11-04 12:58:15] INFO: Fractures: 24
+[2026-11-04 12:58:15] INFO: Truncated: 23
+
+[2026-11-04 12:58:15] INFO: Total Surface Area:     449.538064 m^2
+[2026-11-04 12:58:15] INFO: Total Fracture Density   (P30): 0.111111
+[2026-11-04 12:58:15] INFO: Total Fracture Intensity (P32): 2.081195
+[2026-11-04 12:58:15] INFO: Family: 1
+[2026-11-04 12:58:15] INFO:     Accepted: 15
+[2026-11-04 12:58:15] INFO:     Rejected: 11
+[2026-11-04 12:58:15] INFO:     Layer: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Region: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Surface Area: 277.199063 m^2
+[2026-11-04 12:58:15] INFO:     Fracture Intensity (P32): 1.283329
+
+[2026-11-04 12:58:15] INFO: Family: 2
+[2026-11-04 12:58:15] INFO:     Accepted: 9
+[2026-11-04 12:58:15] INFO:     Rejected: 3
+[2026-11-04 12:58:15] INFO:     Layer: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Region: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Surface Area: 172.339001 m^2
+[2026-11-04 12:58:15] INFO:     Fracture Intensity (P32): 0.797866
+
+[2026-11-04 12:58:15] INFO: In cluster groups
+[2026-11-04 12:58:15] INFO: Number of fractures: 24
+[2026-11-04 12:58:15] INFO: Number of groups: 13
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+
+[2026-11-04 12:58:15] INFO: Statistics After Isolated Fractures Removed:
+[2026-11-04 12:58:15] INFO: Final Number of Fractures: 5
+[2026-11-04 12:58:15] INFO: Isolated Fractures Removed: 19
+[2026-11-04 12:58:15] INFO: Fractures before isolated fractures removed:: 24
+
+[2026-11-04 12:58:15] INFO: Total Surface Area:     108.170953 m^2
+[2026-11-04 12:58:15] INFO: Total Fracture Density   (P30): 0.023148
+[2026-11-04 12:58:15] INFO: Total Fracture Intensity (P32): 0.500791
+[2026-11-04 12:58:15] INFO: Family: 1
+[2026-11-04 12:58:15] INFO:     Fractures After Isolated Fracture Removal: 4
+[2026-11-04 12:58:15] INFO:     Isolated Fractures Removed: 11
+[2026-11-04 12:58:15] INFO:     Accepted: 15
+[2026-11-04 12:58:15] INFO:     Rejected: 11
+[2026-11-04 12:58:15] INFO:     Layer: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Region: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Surface Area: 87.725673 m^2
+[2026-11-04 12:58:15] INFO:     Fracture Intensity (P32): 0.406137
+
+[2026-11-04 12:58:15] INFO: Family: 2
+[2026-11-04 12:58:15] INFO:     Fractures After Isolated Fracture Removal: 1
+[2026-11-04 12:58:15] INFO:     Isolated Fractures Removed: 8
+[2026-11-04 12:58:15] INFO:     Accepted: 9
+[2026-11-04 12:58:15] INFO:     Rejected: 3
+[2026-11-04 12:58:15] INFO:     Layer: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Region: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Surface Area: 20.445280 m^2
+[2026-11-04 12:58:15] INFO:     Fracture Intensity (P32): 0.094654
+
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+
+[2026-11-04 12:58:15] INFO: 24 Fractures Accepted (Before Isolated Fracture Removal)
+[2026-11-04 12:58:15] INFO: 5 Final Fractures (After Isolated Fracture Removal)
+
+[2026-11-04 12:58:15] INFO: Total Fractures Rejected: 14
+[2026-11-04 12:58:15] INFO: Total Fractures Re-translated: 190
+[2026-11-04 12:58:15] INFO: Number of Triple Intersection Points (Before Isolated Fracture Removal): 0
+[2026-11-04 12:58:15] INFO: Intersection Statistics:
+[2026-11-04 12:58:15] INFO:     Number of Intersections: 13 
+[2026-11-04 12:58:15] INFO:     Intersections Shortened: 0 
+[2026-11-04 12:58:15] INFO:     Original Intersection (Before Intersection Shrinking) Length: 23.516757 m
+[2026-11-04 12:58:15] INFO:     Intersection Length Discarded: 0.000000 m
+[2026-11-04 12:58:15] INFO:     Final Intersection Length: 23.516757 m
+[2026-11-04 12:58:15] INFO: Rejection Statistics: 
+[2026-11-04 12:58:15] INFO:     23 Short Intersections 
+[2026-11-04 12:58:15] INFO:     1 Close to Node
+[2026-11-04 12:58:15] INFO:     154 Close to Edge
+[2026-11-04 12:58:15] INFO:     0 Vertex Close to Edge
+[2026-11-04 12:58:15] INFO:     0 Outside of Domain
+[2026-11-04 12:58:15] INFO:     6 Triple intersection Rejections
+[2026-11-04 12:58:15] INFO:     20 Intersections Close to Other Intersections
+
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+[2026-11-04 12:58:15] INFO: Fracture Estimation statistics:
+[2026-11-04 12:58:15] INFO: NOTE: If estimation and actual are very different, expected family distributions might not be accurate. If this is the case, try increasing or decreasing the 'radiiListIncrease' option in the input file.
+[2026-11-04 12:58:15] INFO: Rectangular Family 1
+Using constant size
+
+[2026-11-04 12:58:15] INFO: Rectangular Family 2
+Using constant size
+
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+
+[2026-11-04 12:58:15] INFO: Seed: 6969420
+[2026-11-04 12:58:15] INFO: /app/poc/output//dfnGen_output
+[2026-11-04 12:58:15] INFO: Writing Graph Data Files
+[2026-11-04 12:58:15] INFO: Writing Polygon Files
+[2026-11-04 12:58:15] INFO: Writing Polygon Files Complete
+[2026-11-04 12:58:15] INFO: Writing Intersection Files
+[2026-11-04 12:58:15] INFO: Writing poly inp files
+[2026-11-04 12:58:15] INFO: Writing /app/poc/output//dfnGen_output/../params.txt
+[2026-11-04 12:58:15] INFO: Writing Radii File (radii.dat)
+[2026-11-04 12:58:15] INFO: Writing Rejection Statistics File (rejections.dat)
+[2026-11-04 12:58:15] INFO: Writing Family Definitions File (families.dat)
+[2026-11-04 12:58:15] INFO: Writing Fracture Translations File (translations.dat)
+[2026-11-04 12:58:15] INFO: Writing Connectivity Data (connectivity.dat)
+[2026-11-04 12:58:15] INFO: Writing Rotation Data File (poly_info.dat)
+[2026-11-04 12:58:15] INFO: Writing Normal Vectors into File (normal_vectors.dat)
+[2026-11-04 12:58:15] INFO: Writing Rotation Data File (rejectsPerAttempt.dat)
+[2026-11-04 12:58:15] INFO: Writing Boundary Files
+[2026-11-04 12:58:15] INFO: Lagrit Should Remove 44 Nodes (88/2 - 0)
+[2026-11-04 12:58:15] INFO: DFNGen - Complete
+
+2026-11-04 12:58:15,873 INFO -->Opening dfnGen LogFile...
+
+2026-11-04 12:58:15,874 INFO [2026-11-04 12:58:15] INFO: Starting DFNGen
+[2026-11-04 12:58:15] INFO: DFN Generator Input File: dfnGen_output/output_dfnGen_input_clean.dat
+
+[2026-11-04 12:58:15] INFO: 
+[2026-11-04 12:58:15] INFO: Expecting Trend & Plunge (trend clockwise from North; plunge positive downward)
+[2026-11-04 12:58:15] INFO: h: 0.350000
+[2026-11-04 12:58:15] INFO: Shape Families:
+[2026-11-04 12:58:15] INFO: 
+
+Rectangular Family 1:
+[2026-11-04 12:58:15] INFO: Number of Vertices: 4
+[2026-11-04 12:58:15] INFO: Aspect Ratio: 1.000000
+[2026-11-04 12:58:15] INFO: Beta (Rotation Around Normal Vector): 0.000000 rad, 0.000000 deg
+[2026-11-04 12:58:15] INFO: Trend: 0.000000 rad, 0.000000 deg
+[2026-11-04 12:58:15] INFO: Plunge: 0.000000 rad, 0.000000 deg 
+[2026-11-04 12:58:15] INFO: Orientation Distribution: 
+[2026-11-04 12:58:15] INFO: Kappa: 20.000000
+[2026-11-04 12:58:15] INFO: Kappa1: 0.000000
+[2026-11-04 12:58:15] INFO: Kappa2: 0.000000
+[2026-11-04 12:58:15] INFO: Layer: Entire domain
+[2026-11-04 12:58:15] INFO: Region: Entire domain
+[2026-11-04 12:58:15] INFO: Distribution: Constant
+[2026-11-04 12:58:15] INFO: Radius: 2.000000m
+[2026-11-04 12:58:15] INFO: Family Insertion Probability: 0.500000
+[2026-11-04 12:58:15] INFO: 
+
+Rectangular Family 2:
+[2026-11-04 12:58:15] INFO: Number of Vertices: 4
+[2026-11-04 12:58:15] INFO: Aspect Ratio: 1.000000
+[2026-11-04 12:58:15] INFO: Beta (Rotation Around Normal Vector): 0.000000 rad, 0.000000 deg
+[2026-11-04 12:58:15] INFO: Trend: 0.610865 rad, 35.000000 deg
+[2026-11-04 12:58:15] INFO: Plunge: 1.570796 rad, 90.000000 deg 
+[2026-11-04 12:58:15] INFO: Orientation Distribution: 
+[2026-11-04 12:58:15] INFO: Kappa: 20.000000
+[2026-11-04 12:58:15] INFO: Kappa1: 0.000000
+[2026-11-04 12:58:15] INFO: Kappa2: 0.000000
+[2026-11-04 12:58:15] INFO: Layer: Entire domain
+[2026-11-04 12:58:15] INFO: Region: Entire domain
+[2026-11-04 12:58:15] INFO: Distribution: Constant
+[2026-11-04 12:58:15] INFO: Radius: 2.000000m
+[2026-11-04 12:58:15] INFO: Family Insertion Probability: 0.500000
+[2026-11-04 12:58:15] INFO: Building radii lists for nPoly option...
+[2026-11-04 12:58:15] INFO: Building radii lists for nPoly option Complete[2026-11-04 12:58:15] INFO: Rectangular family 1 using constant size
+[2026-11-04 12:58:15] INFO: Rectangular family 2 using constant size
+[2026-11-04 12:58:15] INFO: ========================================================
+[2026-11-04 12:58:15] INFO:             Network Generation Complete
+[2026-11-04 12:58:15] INFO: ========================================================
+[2026-11-04 12:58:15] INFO: Version of DFNGen: 2.2
+[2026-11-04 12:58:15] INFO: Layer Conforming Fractures: perfect conforming
+[2026-11-04 12:58:15] INFO: Time Stamp: Wed Nov  4 12:58:15 2026
+
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+
+[2026-11-04 12:58:15] INFO: Statistics Before Isolated Fractures Removed:
+
+[2026-11-04 12:58:15] INFO: Fractures: 24
+[2026-11-04 12:58:15] INFO: Truncated: 23
+
+[2026-11-04 12:58:15] INFO: Total Surface Area:     449.538064 m^2
+[2026-11-04 12:58:15] INFO: Total Fracture Density   (P30): 0.111111
+[2026-11-04 12:58:15] INFO: Total Fracture Intensity (P32): 2.081195
+[2026-11-04 12:58:15] INFO: Family: 1
+[2026-11-04 12:58:15] INFO:     Accepted: 15
+[2026-11-04 12:58:15] INFO:     Rejected: 11
+[2026-11-04 12:58:15] INFO:     Layer: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Region: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Surface Area: 277.199063 m^2
+[2026-11-04 12:58:15] INFO:     Fracture Intensity (P32): 1.283329
+
+[2026-11-04 12:58:15] INFO: Family: 2
+[2026-11-04 12:58:15] INFO:     Accepted: 9
+[2026-11-04 12:58:15] INFO:     Rejected: 3
+[2026-11-04 12:58:15] INFO:     Layer: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Region: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Surface Area: 172.339001 m^2
+[2026-11-04 12:58:15] INFO:     Fracture Intensity (P32): 0.797866
+
+[2026-11-04 12:58:15] INFO: In cluster groups
+[2026-11-04 12:58:15] INFO: Number of fractures: 24
+[2026-11-04 12:58:15] INFO: Number of groups: 13
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+
+[2026-11-04 12:58:15] INFO: Statistics After Isolated Fractures Removed:
+[2026-11-04 12:58:15] INFO: Final Number of Fractures: 5
+[2026-11-04 12:58:15] INFO: Isolated Fractures Removed: 19
+[2026-11-04 12:58:15] INFO: Fractures before isolated fractures removed:: 24
+
+[2026-11-04 12:58:15] INFO: Total Surface Area:     108.170953 m^2
+[2026-11-04 12:58:15] INFO: Total Fracture Density   (P30): 0.023148
+[2026-11-04 12:58:15] INFO: Total Fracture Intensity (P32): 0.500791
+[2026-11-04 12:58:15] INFO: Family: 1
+[2026-11-04 12:58:15] INFO:     Fractures After Isolated Fracture Removal: 4
+[2026-11-04 12:58:15] INFO:     Isolated Fractures Removed: 11
+[2026-11-04 12:58:15] INFO:     Accepted: 15
+[2026-11-04 12:58:15] INFO:     Rejected: 11
+[2026-11-04 12:58:15] INFO:     Layer: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Region: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Surface Area: 87.725673 m^2
+[2026-11-04 12:58:15] INFO:     Fracture Intensity (P32): 0.406137
+
+[2026-11-04 12:58:15] INFO: Family: 2
+[2026-11-04 12:58:15] INFO:     Fractures After Isolated Fracture Removal: 1
+[2026-11-04 12:58:15] INFO:     Isolated Fractures Removed: 8
+[2026-11-04 12:58:15] INFO:     Accepted: 9
+[2026-11-04 12:58:15] INFO:     Rejected: 3
+[2026-11-04 12:58:15] INFO:     Layer: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Region: Whole Domain 
+[2026-11-04 12:58:15] INFO:     Surface Area: 20.445280 m^2
+[2026-11-04 12:58:15] INFO:     Fracture Intensity (P32): 0.094654
+
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+
+[2026-11-04 12:58:15] INFO: 24 Fractures Accepted (Before Isolated Fracture Removal)
+[2026-11-04 12:58:15] INFO: 5 Final Fractures (After Isolated Fracture Removal)
+
+[2026-11-04 12:58:15] INFO: Total Fractures Rejected: 14
+[2026-11-04 12:58:15] INFO: Total Fractures Re-translated: 190
+[2026-11-04 12:58:15] INFO: Number of Triple Intersection Points (Before Isolated Fracture Removal): 0
+[2026-11-04 12:58:15] INFO: Intersection Statistics:
+[2026-11-04 12:58:15] INFO:     Number of Intersections: 13 
+[2026-11-04 12:58:15] INFO:     Intersections Shortened: 0 
+[2026-11-04 12:58:15] INFO:     Original Intersection (Before Intersection Shrinking) Length: 23.516757 m
+[2026-11-04 12:58:15] INFO:     Intersection Length Discarded: 0.000000 m
+[2026-11-04 12:58:15] INFO:     Final Intersection Length: 23.516757 m
+[2026-11-04 12:58:15] INFO: Rejection Statistics: 
+[2026-11-04 12:58:15] INFO:     23 Short Intersections 
+[2026-11-04 12:58:15] INFO:     1 Close to Node
+[2026-11-04 12:58:15] INFO:     154 Close to Edge
+[2026-11-04 12:58:15] INFO:     0 Vertex Close to Edge
+[2026-11-04 12:58:15] INFO:     0 Outside of Domain
+[2026-11-04 12:58:15] INFO:     6 Triple intersection Rejections
+[2026-11-04 12:58:15] INFO:     20 Intersections Close to Other Intersections
+
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+[2026-11-04 12:58:15] INFO: Fracture Estimation statistics:
+[2026-11-04 12:58:15] INFO: NOTE: If estimation and actual are very different, expected family distributions might not be accurate. If this is the case, try increasing or decreasing the 'radiiListIncrease' option in the input file.
+[2026-11-04 12:58:15] INFO: Rectangular Family 1
+Using constant size
+
+[2026-11-04 12:58:15] INFO: Rectangular Family 2
+Using constant size
+
+[2026-11-04 12:58:15] INFO: ________________________________________________________
+
+[2026-11-04 12:58:15] INFO: Seed: 6969420
+[2026-11-04 12:58:15] INFO: /app/poc/output//dfnGen_output
+[2026-11-04 12:58:15] INFO: Writing Graph Data Files
+[2026-11-04 12:58:15] INFO: Writing Polygon Files
+[2026-11-04 12:58:15] INFO: Writing Polygon Files Complete
+[2026-11-04 12:58:15] INFO: Writing Intersection Files
+[2026-11-04 12:58:15] INFO: Writing poly inp files
+[2026-11-04 12:58:15] INFO: Writing /app/poc/output//dfnGen_output/../params.txt
+[2026-11-04 12:58:15] INFO: Writing Radii File (radii.dat)
+[2026-11-04 12:58:15] INFO: Writing Rejection Statistics File (rejections.dat)
+[2026-11-04 12:58:15] INFO: Writing Family Definitions File (families.dat)
+[2026-11-04 12:58:15] INFO: Writing Fracture Translations File (translations.dat)
+[2026-11-04 12:58:15] INFO: Writing Connectivity Data (connectivity.dat)
+[2026-11-04 12:58:15] INFO: Writing Rotation Data File (poly_info.dat)
+[2026-11-04 12:58:15] INFO: Writing Normal Vectors into File (normal_vectors.dat)
+[2026-11-04 12:58:15] INFO: Writing Rotation Data File (rejectsPerAttempt.dat)
+[2026-11-04 12:58:15] INFO: Writing Boundary Files
+[2026-11-04 12:58:15] INFO: Lagrit Should Remove 44 Nodes (88/2 - 0)
+[2026-11-04 12:58:15] INFO: DFNGen - Complete
+
+2026-11-04 12:58:15,874 INFO --> Parsing dfnWorks output and adding to object
+2026-11-04 12:58:15,874 INFO --> Parsing params.txt file
+2026-11-04 12:58:15,874 INFO --> Number of Fractures: 5
+2026-11-04 12:58:15,874 INFO --> h: 3.50e-01 m
+2026-11-04 12:58:15,874 INFO --> Visual mode is off
+2026-11-04 12:58:15,875 INFO --> Expected Number of dudded points: 44
+2026-11-04 12:58:15,875 INFO --> X Domain Size 6.0 m
+2026-11-04 12:58:15,875 INFO --> Y Domain Size 6.0 m
+2026-11-04 12:58:15,875 INFO --> Z Domain Size 6.0 m
+2026-11-04 12:58:15,875 INFO --> Parsing params.txt complete
+
+2026-11-04 12:58:15,879 INFO --> Loading Polygon information onto DFN object
+2026-11-04 12:58:15,881 INFO --> Data from polygons.dat stored on class in self.polygons
+
+2026-11-04 12:58:15,896 INFO --> Assign hydraulic properties: Starting 
+2026-11-04 12:58:15,896 INFO --> Assign hydraulic properties to fracture families : Starting 
+2026-11-04 12:58:15,896 INFO --> Working on Fracture Family 1
+2026-11-04 12:58:15,896 INFO --> Creating Perfectly Correlated transmissivity values based on fracture radius.
+2026-11-04 12:58:15,896 INFO T = 1.00e-13 * r^1 m^2/s
+2026-11-04 12:58:15,896 INFO --> Complete
+
+2026-11-04 12:58:15,896 INFO --> Working on Fracture Family 2
+2026-11-04 12:58:15,897 INFO --> Creating Perfectly Correlated transmissivity values based on fracture radius.
+2026-11-04 12:58:15,897 INFO T = 1.00e-13 * r^1 m^2/s
+2026-11-04 12:58:15,897 INFO --> Complete
+
+2026-11-04 12:58:15,897 INFO --> Assign hydraulic properties to fracture families : Complete 
+2026-11-04 12:58:15,897 INFO --> No Rejected User Fractures, Ignore Following Warning.
+2026-11-04 12:58:15,897 INFO --> Inserting User Rectangle Hydraulic Params First
+2026-11-04 12:58:15,897 INFO --> Assign hydraulic properties: Complete 
+2026-11-04 12:58:15,897 INFO --------------------------------------------------------------------------------
+2026-11-04 12:58:15,897 INFO Generation Succeeded
+2026-11-04 12:58:15,897 INFO --------------------------------------------------------------------------------
+2026-11-04 12:58:15,897 INFO ================================================================================
+2026-11-04 12:58:15,898 INFO Meshing DFN using LaGriT : Starting
+2026-11-04 12:58:15,898 INFO ================================================================================
+2026-11-04 12:58:15,898 INFO --> Computing mesh resolution function
+2026-11-04 12:58:15,898 INFO --> Uniform Mesh Resolution Selected
+2026-11-04 12:58:15,898 INFO *** Mesh resolution ***
+2026-11-04 12:58:15,898 INFO 	r(d) = 0.175
+
+2026-11-04 12:58:15,898 INFO --> Computing mesh resolution function : complete 
+
+2026-11-04 12:58:15,898 INFO --> Creating scripts for LaGriT meshing
+2026-11-04 12:58:15,900 INFO --> Creating scripts for LaGriT meshing: complete
+2026-11-04 12:58:15,900 INFO ================================================================================
+2026-11-04 12:58:15,900 INFO --> Triangulating 5 fractures using 4 processors
+
+2026-11-04 12:58:15,958 INFO 	* Starting on Fracture 2 out of 5 *
+2026-11-04 12:58:15,958 INFO 	* Starting on Fracture 1 out of 5 *
+2026-11-04 12:58:15,962 INFO 	* Starting on Fracture 3 out of 5 *
+2026-11-04 12:58:15,962 INFO 	* Starting on Fracture 4 out of 5 *
+2026-11-04 12:58:16,900 INFO 	* Starting on Fracture 5 out of 5 *
+2026-11-04 12:58:17,460 INFO --> Triangulating Polygons: Complete
+
+2026-11-04 12:58:17,461 INFO --> Total Time to Mesh Network:
+2026-11-04 12:58:17,461 INFO --> 1.56e+00 seconds	2.60e-02 minutes	4.33e-04 hours
+2026-11-04 12:58:17,461 INFO ================================================================================
+2026-11-04 12:58:17,461 INFO * Checking for meshing issues.
+2026-11-04 12:58:17,461 INFO * No meshing issues detected. Heck yeah!
+2026-11-04 12:58:17,461 INFO ================================================================================
+2026-11-04 12:58:17,462 INFO ================================================================================
+2026-11-04 12:58:17,462 INFO * Merging the mesh: Starting
+2026-11-04 12:58:17,462 INFO --> Writting partial merge scripts
+2026-11-04 12:58:17,462 INFO --> There are 2 fractures in each part
+2026-11-04 12:58:17,464 INFO --> Writting merge scripts: Complete 
+2026-11-04 12:58:17,464 INFO --> Writing : merge_network.lgi
+2026-11-04 12:58:17,465 INFO --> Dumping output for PFLOTRAN
+2026-11-04 12:58:17,465 INFO --> Writing : merge_network.lgi - complete
+2026-11-04 12:58:17,465 INFO ================================================================================
+2026-11-04 12:58:17,465 INFO --> Merging triangulated fracture meshes using 4 processors.
+2026-11-04 12:58:17,679 INFO --> Initial merging complete. Time elapsed: 2.14e-01 seconds.
+2026-11-04 12:58:17,679 INFO --> Starting Final Merge
+2026-11-04 12:58:17,993 INFO --> Final merge complete. Time elapsed: 3.14e-01 seconds
+2026-11-04 12:58:17,993 INFO --> Checking for final mesh
+2026-11-04 12:58:17,993 INFO --> Checking for final mesh: Complete
+2026-11-04 12:58:17,993 INFO * Merging the mesh: Complete
+2026-11-04 12:58:17,994 INFO ================================================================================
+2026-11-04 12:58:17,995 INFO --> Checking that number of dudded points is correct
+
+2026-11-04 12:58:17,997 INFO --> From LaGriT: FILTERKD:Dudding duplicate points:            44                                
+
+2026-11-04 12:58:17,998 INFO --> From LaGriT: RMPOINT: new point count is         1120                                        
+
+2026-11-04 12:58:17,999 INFO --> Expected Number of dudded points: 44
+2026-11-04 12:58:17,999 INFO --> Actual Number of dudded points: 44
+2026-11-04 12:58:18,000 INFO --> Difference between expected and actual dudded points: 0
+2026-11-04 12:58:18,000 INFO --> The correct number of points were removed. Onward!
+
+2026-11-04 12:58:18,001 INFO --> The primary mesh in full_mesh.inp has 1120 nodes and 1948 triangular elements
+2026-11-04 12:58:18,006 INFO --> Cleaning up directory after meshing
+2026-11-04 12:58:18,013 INFO --> Cleaning up directory after meshing complete
+2026-11-04 12:58:18,013 INFO --> Total Time to Mesh Network:
+2026-11-04 12:58:18,014 INFO --> 2.12e+00 seconds	3.53e-02 minutes	5.88e-04 hours
+2026-11-04 12:58:18,014 INFO ================================================================================
+2026-11-04 12:58:18,015 INFO Meshing DFN using LaGriT : Complete
+2026-11-04 12:58:18,015 INFO ================================================================================
+2026-11-04 12:58:18,015 INFO ================================================================================
+2026-11-04 12:58:18,015 INFO Starting conversion of files for PFLOTRAN 
+2026-11-04 12:58:18,015 INFO ********************************************************************************
+2026-11-04 12:58:18,016 INFO --> Converting zone files to ex
+2026-11-04 12:58:18,016 INFO --> Opening uge file
+2026-11-04 12:58:18,019 INFO --> Finished processing uge file
+
+2026-11-04 12:58:18,019 INFO --> Opening zone file: boundary_front_n.zone
+2026-11-04 12:58:18,019 INFO --> Reading boundary node ids
+2026-11-04 12:58:18,020 INFO --> Finished reading zone file
+2026-11-04 12:58:18,020 INFO --> Finished calculating boundary connections
+2026-11-04 12:58:18,020 INFO --> Finished writing ex file boundary_front_n.ex corresponding to the zone file: boundary_front_n.zone 
+
+2026-11-04 12:58:18,020 INFO --> Opening zone file: boundary_back_s.zone
+2026-11-04 12:58:18,020 INFO --> Reading boundary node ids
+2026-11-04 12:58:18,020 INFO --> Finished reading zone file
+2026-11-04 12:58:18,020 INFO --> Finished calculating boundary connections
+2026-11-04 12:58:18,021 INFO --> Finished writing ex file boundary_back_s.ex corresponding to the zone file: boundary_back_s.zone 
+
+2026-11-04 12:58:18,021 INFO --> Opening zone file: boundary_left_w.zone
+2026-11-04 12:58:18,021 INFO --> Reading boundary node ids
+2026-11-04 12:58:18,021 INFO --> Finished reading zone file
+2026-11-04 12:58:18,021 INFO --> Finished calculating boundary connections
+2026-11-04 12:58:18,022 INFO --> Finished writing ex file boundary_left_w.ex corresponding to the zone file: boundary_left_w.zone 
+
+2026-11-04 12:58:18,022 INFO --> Opening zone file: boundary_right_e.zone
+2026-11-04 12:58:18,022 INFO --> Reading boundary node ids
+2026-11-04 12:58:18,023 INFO --> Finished reading zone file
+2026-11-04 12:58:18,023 INFO --> Finished calculating boundary connections
+2026-11-04 12:58:18,024 INFO --> Finished writing ex file boundary_right_e.ex corresponding to the zone file: boundary_right_e.zone 
+
+2026-11-04 12:58:18,024 INFO --> Opening zone file: boundary_top.zone
+2026-11-04 12:58:18,024 INFO --> Reading boundary node ids
+2026-11-04 12:58:18,024 INFO --> Finished reading zone file
+2026-11-04 12:58:18,024 INFO --> Finished calculating boundary connections
+2026-11-04 12:58:18,025 INFO --> Finished writing ex file boundary_top.ex corresponding to the zone file: boundary_top.zone 
+
+2026-11-04 12:58:18,026 INFO --> Opening zone file: boundary_bottom.zone
+2026-11-04 12:58:18,026 INFO --> Reading boundary node ids
+2026-11-04 12:58:18,026 INFO --> Finished reading zone file
+2026-11-04 12:58:18,026 INFO --> Finished calculating boundary connections
+2026-11-04 12:58:18,026 INFO --> Finished writing ex file boundary_bottom.ex corresponding to the zone file: boundary_bottom.zone 
+
+2026-11-04 12:58:18,026 INFO --> Converting zone files to ex complete
+2026-11-04 12:58:18,026 INFO ********************************************************************************
+2026-11-04 12:58:18,026 INFO ********************************************************************************
+2026-11-04 12:58:18,027 INFO --> Dumping h5 file
+2026-11-04 12:58:18,027 INFO --> Opening HDF5 File dfn_properties.h5
+2026-11-04 12:58:18,032 INFO --> Allocating cell index array
+2026-11-04 12:58:18,032 INFO --> Writing cell indices
+2026-11-04 12:58:18,034 INFO --> Creating permeability array
+2026-11-04 12:58:18,035 INFO --> Note: This script assumes isotropic permeability
+2026-11-04 12:58:18,036 INFO --> Writting Permeability
+2026-11-04 12:58:18,038 INFO --> Done writting h5 file
+2026-11-04 12:58:18,039 INFO ********************************************************************************
+2026-11-04 12:58:18,040 INFO --> Starting: Correcting UGE volumes with fracture apertures
+2026-11-04 12:58:18,066 INFO --> Complete: Correcting UGE volumes with fracture apertures
+2026-11-04 12:58:18,066 INFO --> Time elapsed for UGE file conversion: 0.026 seconds
+
+2026-11-04 12:58:18,067 INFO Conversion of files for PFLOTRAN complete
+2026-11-04 12:58:18,067 INFO ================================================================================

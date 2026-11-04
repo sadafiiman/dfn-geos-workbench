@@ -1,0 +1,5 @@
+read/avs/full_mesh.inp/MODFN                                                    
+trans/1 0 0/0 0 0/0 0 0                                                         
+cmo/printatt/MODFN/-xyz-/minmax                                                 
+dump/full_mesh.inp/MODFN                                                        
+finish                                                                          

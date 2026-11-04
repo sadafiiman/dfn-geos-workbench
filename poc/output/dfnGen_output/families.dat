@@ -1,0 +1,34 @@
+Rectangular Family: 1
+Global Family: 1
+Number of Vertices: 4
+Aspect Ratio: 1
+Beta (Rotation Around Normal Vector)-rad: 0
+Beta (Rotation Around Normal Vector)-deg: 0
+Trend-rad: 0
+Trend-deg: 0
+Plunge-rad: 0
+Plunge-deg: 0
+Kappa:  20
+Layer: Entire domain
+Region: Entire domain
+Distribution: Constant
+Radius (m): 2
+Family Insertion Probability: 0.5
+
+Rectangular Family: 2
+Global Family: 2
+Number of Vertices: 4
+Aspect Ratio: 1
+Beta (Rotation Around Normal Vector)-rad: 0
+Beta (Rotation Around Normal Vector)-deg: 0
+Trend-rad: 0.610865
+Trend-deg: 35
+Plunge-rad: 1.5708
+Plunge-deg: 90
+Kappa:  20
+Layer: Entire domain
+Region: Entire domain
+Distribution: Constant
+Radius (m): 2
+Family Insertion Probability: 0.5
+
