@@ -1,5 +1,9 @@
 # Installation & operation — Windows
 
+> **New here?** Start with the 3-page
+> [`TUTORIAL_windows.pdf`](TUTORIAL_windows.pdf) (input → results). This file
+> is the reference for every option below.
+
 The workbench is developed on Ubuntu and runs on Windows **without code
 changes**. Two levels of support:
 
@@ -8,7 +12,21 @@ changes**. Two levels of support:
 | Management panel (UI, file upload/download, logs, DB) | ✔ native (pure Python) |
 | dfnWorks→GEOS converters | ✔ native (pure Python + numpy) |
 | dfnWorks generation/meshing | ✔ via **Docker Desktop** (recommended) or native LaGriT (partial) |
-| GEOS solver | via Docker or WSL2 (GEOS ships no Windows build) |
+| GEOS solver | WSL2 (native Linux) or Docker; no Windows build exists |
+| Converted *conformal* deck | generated, but needs a split matrix (see report §6.3) |
+| Converted *EDFM* deck | ✔ runs today (executed 49-step PoC) |
+
+## 0. Fast path (5 commands)
+
+```bat
+pip install numpy
+docker pull ees16/dfnworks:latest
+cd dfn-geos-workbench
+python run_panel.py
+:: open http://localhost:8765 → Quick process → drop a ZIP → Process
+```
+
+In **Settings** set *dfnWorks backend* = `docker`. Everything else is optional.
 
 ## 1. Prerequisites
 
@@ -55,13 +73,52 @@ In **Settings**:
 
 ## 5. GEOS on Windows
 
-GEOS is developed for Linux/HPC; on Windows use one of:
+GEOS is built for Linux and ships **no Windows binary** (its Docker Hub images
+are toolchain images, not a ready-to-run solver). Two workable options:
 
-* **WSL2**: build GEOS inside Ubuntu-on-WSL following `docs/INSTALL_ubuntu.md`,
-  then point the panel's `geos_exe` to the WSL path
-  (e.g. `wsl -e /home/you/GEOS/build/geos` — or run stage 3 from WSL);
-* **Docker**: build a GEOS image from `GEOS/scripts/docker` and set
-  *GEOS backend* = `docker` with the image name in Settings.
+### 5a. Run the whole panel inside WSL2 (recommended)
+
+This is the simplest route: inside WSL the workbench is just a Linux app.
+
+```bat
+wsl --install -d Ubuntu
+:: then, inside Ubuntu:
+::   follow docs/INSTALL_ubuntu.md exactly (git clone, pip install numpy,
+::   build GEOS, python run_panel.py)
+```
+
+Open <http://localhost:8765> from Windows — WSL2 forwards the port. Cases are
+created inside the WSL filesystem, which is also much faster than `/mnt/c`.
+
+### 5b. Native Windows panel + GEOS in a container
+
+The panel supports `geos_backend = docker`. You need an image that contains a
+built `geosx`:
+
+```bat
+:: 1. build once (adapt paths); this is the command pair that was validated
+docker run -d --name geosbuild geosx/ubuntu24.04-gcc13:364-1112 sleep infinity
+docker cp GEOS geosbuild:/opt/GEOS
+docker exec geosbuild bash -lc "git config --global --add safe.directory '*' && cd /opt/GEOS && git submodule update --init --recursive && python3 scripts/config-build.py -hc /spack-generated.cmake -bt Release -bp /opt/geos-build -ip /opt/geos-install -DENABLE_HYPRE=ON -DENABLE_TRILINOS=OFF -DGEOS_LA_INTERFACE=Hypre -DENABLE_TESTS=OFF -DENABLE_EXAMPLES=OFF -DENABLE_BENCHMARKS=OFF -DDISABLE_UNIT_TESTS=ON"
+docker exec geosbuild bash -lc "cd /opt/geos-build && make -j4 geosx"
+docker commit geosbuild dfn-geos:1.1 && docker rm -f geosbuild
+```
+
+Then in **Settings**: *GEOS backend* = `docker`, *GEOS docker image* =
+`dfn-geos:1.1`, *GEOS executable* = `/opt/geos-build/bin/geosx`.
+
+Notes from the reference build (Ubuntu 24.04, TPL tag `364-1112`):
+
+* HPCReact must stay **ON** (it is included unconditionally by
+  `ReactiveSinglePhaseFluid.hpp`); build only the `geosx` target, not
+  `install`/`all`, otherwise HPCReact unit tests pull in gtest.
+* `-j4` is a safe default under Docker Desktop's default memory; give Docker
+  12 GB+ and raise to `-j6` if you want it faster.
+* Expect 30–60 minutes. The resulting binary is
+  `/opt/geos-build/bin/geosx` (~324 KB launcher + shared libraries).
+
+Without a GEOS binary you still get every model artifact (mesh + decks); only
+stage *3 · Run GEOS* is unavailable.
 
 ## 6. Notes
 

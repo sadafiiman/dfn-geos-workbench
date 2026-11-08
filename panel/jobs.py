@@ -111,6 +111,9 @@ class JobRunner:
                 self._chown_case(case_dir)
 
             details = collect_artifacts(job["stage"], case_dir, self.config, rc)
+            if rc == 0:
+                self._register_artifacts(job["case_id"], job["stage"],
+                                         case_dir, details)
             chain = list(job.get("details", {}).get("chain") or [])
             if rc == 0 and chain:
                 details["chained_next"] = chain
@@ -130,6 +133,23 @@ class JobRunner:
         finally:
             with self._lock:
                 self._procs.pop(job_id, None)
+
+    def _register_artifacts(self, case_id: int, stage: str, case_dir: Path,
+                            details: dict) -> None:
+        """Expose the files a successful stage produced on the case page."""
+        paths: list[str] = []
+        if stage == STAGE_CONVERT:
+            for sub, names in details.items():
+                if isinstance(names, list):
+                    paths.extend(f"{sub}/{n}" for n in names)
+        elif stage == STAGE_GEOS_RUN:
+            paths.extend(details.get("plots") or [])
+        else:
+            paths.extend(k for k, v in details.items() if isinstance(v, int))
+        for rel in paths:
+            p = case_dir / rel
+            if p.is_file():
+                self.db.add_artifact(case_id, stage, rel, p.stat().st_size)
 
     def _chown_case(self, case_dir: Path) -> None:
         """Restore host-user ownership of files written by a root container."""
@@ -233,8 +253,11 @@ def stage_geos_run(config: Config, case: dict, case_dir: Path):
     geos = config["geos_exe"]
     if not geos:
         raise RuntimeError("GEOS executable is not configured (see Settings)")
-    candidates = [case_dir / "geos_case" / "geos_dfn_fractures.xml",
-                  case_dir / "geos_case_edfm" / "geos_dfn_edfm.xml"]
+    candidates = [case_dir / "geos_case_edfm" / "geos_dfn_edfm.xml",
+                  case_dir / "geos_case" / "geos_dfn_fractures.xml"]
+    # EDFM first: it is the path proven end-to-end (the conformal deck needs a
+    # fracture-split matrix, see report §6.3).  Anything the user uploaded is
+    # considered after the generated decks.
     candidates += sorted(case_dir.rglob("geos_dfn_*.xml"))
     candidates += sorted(case_dir.rglob("*.xml"))
     xml = next((p for p in candidates if p.exists()), None)
@@ -269,9 +292,20 @@ def collect_artifacts(stage: str, case_dir: Path, config: Config, rc: int) -> di
             if d.is_dir():
                 details[sub] = sorted(p.name for p in d.iterdir())
     elif stage == STAGE_GEOS_RUN:
-        vtks = sorted(case_dir.glob("**/*.pvtu")) + \
-            sorted(case_dir.glob("**/*.vtk"))
-        details["plots"] = [str(p.relative_to(case_dir)) for p in vtks][:20]
+        plots = []
+        for pat in ("**/*.pvd", "**/*.pvtu", "**/*.vtu", "**/*.vtp",
+                    "**/*.vtk"):
+            plots.extend(sorted(case_dir.glob(pat)))
+        seen, keep = set(), []
+        for p in plots:
+            if p in seen:
+                continue
+            seen.add(p)
+            keep.append(str(p.relative_to(case_dir)))
+        details["plots"] = keep[:40]
+        pvds = [p for p in keep if p.endswith(".pvd")]
+        if pvds:
+            details["time_series"] = pvds[0]
     return details
 
 

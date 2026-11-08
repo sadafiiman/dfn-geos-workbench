@@ -43,6 +43,7 @@ dfn-geos-workbench/
 ├── tools/                         ← LaGriT binaries used during the study
 ├── run_panel.py                   ← panel entry point
 └── docs/
+    ├── TUTORIAL_windows.pdf      ← 3-page input→output walkthrough
     ├── INSTALL_ubuntu.md          ← development platform
     └── INSTALL_windows.md         ← deployment platform
 ```

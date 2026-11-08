@@ -1,5 +1,9 @@
 # User Guide — working with the dfn–GEOS Workbench panel
 
+> **On Windows?** Read the 3-page
+> [`TUTORIAL_windows.pdf`](TUTORIAL_windows.pdf) first — it is the short
+> input→output walkthrough. This guide is the full reference.
+
 The panel is a small web app that manages **cases** for the
 dfnWorks → GEOS integration. Each case owns its input parameters, input
 files, output files and job history, and offers a three-stage pipeline:
@@ -49,8 +53,9 @@ below and use **Quick process** in the top bar:
 4. **Download the result** with the **⬇ Download results (.zip)** button on
    the case page. The archive contains your uploaded inputs *and* the
    generated `geos_case/` (`case.vtm`, `main.vtu`, `fracture.vtu`,
-   `geos_dfn_fractures.xml`) plus, when possible, the EDFM deck
-   (`geos_case_edfm/geos_dfn_edfm.xml`).
+   `geos_dfn_fractures.xml`) plus the EDFM deck
+   (`geos_case_edfm/geos_dfn_edfm.xml`, the runnable one), plus the GEOS
+   results (`*.pvd` + per-step `*.vtu`) when stage 3 ran.
 
 That's the whole loop: **ZIP in → ZIP out**. Everything below is the manual
 route when you want to control parameters or inspect each stage.
@@ -154,13 +159,15 @@ On the case page, click the three buttons in order. Each click creates a
    * `main.vtu` — rock matrix (tetrahedra, region attribute, GlobalIds),
    * `fracture.vtu` — explicit fracture surface (triangles, `collocated_nodes`,
      `fracture_id`, `aperture`),
-   * `geos_dfn_fractures.xml` — ready-to-run GEOS input deck.
-   When no DFM mesh exists it falls back to the EDFM reconstruction into
-   `geos_case_edfm/geos_dfn_edfm.xml`.
-3. **3 · Run GEOS** — executes `geos -i geos_dfn_fractures.xml` (or the EDFM
-   deck) and registers the VTK/VTU result files. Without a configured GEOS
-   binary the job fails fast with *"GEOS executable is not configured"* — this
-   is expected and harmless.
+   * `geos_dfn_fractures.xml` — the *conformal* deck.
+   And whenever the DFN job directory is present, the EDFM reconstruction
+   `geos_case_edfm/geos_dfn_edfm.xml` as well.
+3. **3 · Run GEOS** — runs the deck with the configured executable and
+   registers the results. It prefers the **EDFM deck** (proven end-to-end),
+   because the conformal deck needs a fracture-split matrix (report §6.3).
+   Without a configured GEOS binary the job fails fast with *"GEOS executable
+   is not configured"* — this is expected and harmless; every model artifact
+   is already produced by stage 2.
 
 ### Watching a job
 

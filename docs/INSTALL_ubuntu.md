@@ -122,6 +122,11 @@ PYTHONPATH=../compat:../vendor:../dfnWorks/pydfnworks python3 run_dfn_example.py
 cd ../conversion
 python3 dfn_to_geos.py      --dfm-dir ../poc/output/dfm_mesh --out ../poc/geos_case
 python3 poly_to_geos_edfm.py --job-dir ../poc/output --out ../poc/geos_case_edfm
-# then, with a GEOS build available:
-geos -i ../poc/geos_case/geos_dfn_fractures.xml
+# then, with a GEOS build available (EDFM deck is the one that runs today):
+geosx -i ../poc/geos_case_edfm/geos_dfn_edfm.xml
+# the conformal deck loads but needs a split matrix (report §6.3):
+#   geosx -i ../poc/geos_case/geos_dfn_fractures.xml
 ```
+
+The 78-deck validation of GEOS' own samples and the exact GEOS build used are
+documented in `validation/README.md`.
