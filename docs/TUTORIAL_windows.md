@@ -99,11 +99,16 @@ Downloaded newer image"* or *"Image is up to date"*.
 python run_panel.py
 ```
 
-You should see a line like:
+You should see:
 
 ```
-panel listening on http://127.0.0.1:8765
+dfn-GEOS Workbench panel → http://localhost:8765
 ```
+
+If instead you see `cannot listen on port 8765`, another program owns that
+port — use `python run_panel.py --port 9000` and open
+<http://localhost:9000>. **Do not** keep browsing 8765 in that case: you would
+be looking at the other program, not the panel.
 
 Leave this window **open** — it is the server. Now open your browser
 (Chrome/Edge/Firefox) and go to:
@@ -216,6 +221,7 @@ python run_panel.py
 | `'docker' is not recognized`, or *cannot connect to the Docker daemon* | Start Docker Desktop and wait for *Engine running* |
 | `python run_panel.py` → *No module named numpy* | Run `python -m pip install numpy` again |
 | Port 8765 already in use | `python run_panel.py --port 9000`, then open port 9000 |
+| Browser shows gibberish / binary instead of the panel | You are on a port owned by another program — start with `--port 9000` and open that |
 | Stage 1: *no intersecting fractures* | Make fractures larger, or lower *Mesh h* |
 | Stage 1: `MO DOES NOT EXIST: mo_poisson_pts` | Old LaGriT found — keep *dfnWorks backend* = `docker` |
 | Stage 3: *GEOS executable is not configured* | Expected without step 9 |

@@ -774,7 +774,13 @@ class PanelServer(ThreadingHTTPServer):
 
 def serve(port: int = 8765, home: Path | None = None) -> None:
     panel = Panel(home)
-    httpd = PanelServer(("0.0.0.0", port), panel)
+    try:
+        httpd = PanelServer(("0.0.0.0", port), panel)
+    except OSError as exc:
+        print(f"cannot listen on port {port}: {exc}", flush=True)
+        print(f"another program is already using it — try:", flush=True)
+        print(f"    python run_panel.py --port {port + 1}", flush=True)
+        raise SystemExit(1)
     print(f"dfn-GEOS Workbench panel → http://localhost:{port}")
     print(f"  settings: {panel.config.path}")
     print(f"  cases:    {panel.cases_root}")
