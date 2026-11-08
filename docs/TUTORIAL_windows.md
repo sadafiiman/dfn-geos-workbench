@@ -1,129 +1,236 @@
 # dfnWorks → GEOS Workbench
-## Windows quick tutorial — input in, results out
+## From zero on Windows — copy, paste, run
 
-The workbench turns a dfnWorks fracture network into a **GEOS-ready model**:
-a VTK mesh with an explicit fracture block, and the XML input deck(s) that run
-it. You feed it files through a small web panel and download the results.
+You do **not** need to know Git, Docker or Python. Follow the steps in order,
+paste one grey block at a time into PowerShell, press **Enter**, and wait for
+it to finish before the next block.
+
+Total time: about **20 minutes** (most of it is one large download).
 
 ---
 
-## 1. Install once
+## What you are installing
 
-1. **Python 3.10+** — <https://python.org> (tick *Add python.exe to PATH*).
-2. **Docker Desktop** — <https://docker.com/products/docker-desktop>, keep the
-   **WSL2 backend** enabled.
-3. Open *PowerShell* and install the Python dependency, then the dfnWorks image:
+| Program | Why | Where |
+|---|---|---|
+| **Git** | downloads (clones) the project code | <https://git-scm.com/download/win> |
+| **Python 3.10+** | runs the panel | <https://python.org/downloads> |
+| **Docker Desktop** | runs dfnWorks and GEOS without installing Linux tools | <https://docker.com/products/docker-desktop> |
 
-```bat
-pip install numpy
+Plus two folders of code, downloaded in step 3.
+
+---
+
+## Step 1 — Install the three programs
+
+1. **Git** — run the installer, keep every default, click *Next* to the end.
+2. **Python** — on the first installer screen **tick “Add python.exe to
+   PATH”**, then *Install Now*.
+3. **Docker Desktop** — install, accept the WSL2 prompt, restart the PC when
+   asked. After restart, open **Docker Desktop** from the Start menu and wait
+   until it says **Engine running** (whale icon in the tray, not animated).
+
+> Docker Desktop must be running every time you use the panel.
+
+---
+
+## Step 2 — Open PowerShell
+
+Press **Win + X** → **Terminal** (or *Windows PowerShell*).
+
+A window opens with a line ending in `>`. That is where you paste. To paste,
+right-click inside the window (or `Ctrl+V`), then press **Enter**.
+
+Check the three programs answered correctly:
+
+```powershell
+git --version
+python --version
+docker --version
+```
+
+Each must print a version number. If one says *"not recognized"*, that program
+did not install — see **Troubleshooting** at the end.
+
+---
+
+## Step 3 — Download the project code
+
+Two repositories are needed. Paste this whole block once:
+
+```powershell
+mkdir C:\dfn-project
+cd C:\dfn-project
+git clone https://github.com/lanl/dfnWorks.git
+git clone https://github.com/sadafiiman/dfn-geos-workbench.git
+```
+
+* `dfnWorks` — the fracture-network generator (used by the panel).
+* `dfn-geos-workbench` — the panel, converters and report (this project).
+
+> Use a short path like `C:\dfn-project`. Do **not** put it on the Desktop or
+> in OneDrive: long paths and syncing break the mesh tools.
+
+---
+
+## Step 4 — Install the Python package and the dfnWorks image
+
+```powershell
+cd C:\dfn-project\dfn-geos-workbench
+python -m pip install --upgrade pip
+python -m pip install numpy
 docker pull ees16/dfnworks:latest
 ```
 
-> Docker must be running (whale icon in the tray) before you start a job.
+The last line downloads about **1.5 GB**. Wait until it prints *"Status:
+Downloaded newer image"* or *"Image is up to date"*.
 
 ---
 
-## 2. Start the panel
+## Step 5 — Start the panel
 
-```bat
-cd C:\path\to\dfn-geos-workbench
+```powershell
 python run_panel.py
 ```
 
-Open **http://localhost:8765**. Keep PowerShell open; `Ctrl+C` stops the panel.
-Cases, logs and the database are written next to the code (`cases\`, `panel.db`).
+You should see a line like:
+
+```
+panel listening on http://127.0.0.1:8765
+```
+
+Leave this window **open** — it is the server. Now open your browser
+(Chrome/Edge/Firefox) and go to:
+
+**<http://localhost:8765>**
+
+To stop the panel later, click in the PowerShell window and press **Ctrl+C**.
 
 ---
 
-## 3. Configure it once
+## Step 6 — Settings (do this once)
 
-Click **Settings** and fill in:
+In the panel click **Settings** and enter exactly:
 
-| Field | Value on Windows |
+| Field | Value |
 |---|---|
 | dfnWorks backend | `docker` |
 | dfnWorks docker image | `ees16/dfnworks:latest` |
-| dfnWorks repository | `C:\path\to\dfnWorks` (only needed for native runs) |
-| GEOS executable | leave empty (see step 6) |
+| dfnWorks repository | `C:\dfn-project\dfnWorks` |
+| GEOS executable | leave **empty** |
 
-**Save**. The dashboard now shows the resolved paths.
+Click **Save**. The dashboard now shows the paths it will use.
 
 ---
 
-## 4. Give it your input
+## Step 7 — Run your first case
 
-Click **Quick process** in the top bar and either
+1. Click **Quick process** (top bar).
+2. Drag a **ZIP** onto the page — or click *pick files* and select your files.
+3. Optionally type a case name.
+4. Click **Process**.
 
-* **drop a ZIP** on the page, or
-* **pick loose files** (they are packed automatically).
+The panel recognises what you gave it and runs the right steps:
 
-Accepted content — the panel detects it and runs the right stage by itself:
-
-| Your files | What it does |
+| Your input | What the panel does |
 |---|---|
-| `full_mesh.inp`, `params.txt`, `polys\`, `dfm_mesh\` | converts to a GEOS case |
+| `full_mesh.inp`, `params.txt`, `polys\`, `dfm_mesh\` | converts to a GEOS model |
 | `dfn_driver.py`, `input_generator.dat`, `case_params.json` | generates the dfnWorks mesh, then converts |
 | `*.xml` + `*.vtm` / `*.vtu` | runs GEOS on your own deck |
-| nothing recognised | runs the full pipeline with defaults |
+| nothing recognised | runs the whole pipeline with defaults |
 
-Give the case a name (optional) → **Process**. Stages chain automatically and
-the page refreshes while they run.
+A normal case takes **2–10 minutes**. The page shows each stage turning green;
+the **Log** button next to a stage shows the full output.
+
+> No input file yet? Use the example shipped with the project: open
+> `C:\dfn-project\dfn-geos-workbench\poc\output`, select the files, and zip
+> them — that is a real dfnWorks result you can convert immediately.
 
 ---
 
-## 5. Collect the output
+## Step 8 — Collect the results
 
-Open the case and click **⬇ Download results (.zip)**. You get:
+Open the case and click **⬇ Download results (.zip)**, then unzip it.
 
 ```
 geos_case\
   case.vtm                  multi-block container GEOS reads
-  main.vtu                  rock matrix (tetrahedra, region attribute, GlobalIds)
-  fracture.vtu              explicit fracture surfaces (triangles, aperture,
-                            fracture_id, collocated_nodes)
-  geos_dfn_fractures.xml    conformal GEOS deck
+  main.vtu                  rock matrix (tetrahedra)
+  fracture.vtu              explicit fracture surfaces (triangles + aperture)
+  geos_dfn_fractures.xml    conformal GEOS input deck
 geos_case_edfm\
-  geos_dfn_edfm.xml         EDFM GEOS deck (the runnable one today)
-output\                     dfnWorks files produced or uploaded
+  geos_dfn_edfm.xml         EDFM GEOS input deck — this is the one to run
+output\                     dfnWorks files (generated or uploaded)
 ```
 
-The **Artifacts** table lists each generated file; **Files** browses everything;
-`log` next to any job shows the full stdout for diagnosis.
-
-> `geos_case_edfm\geos_dfn_edfm.xml` is the deck to use: it represents the
-> whole fracture network as embedded surface elements inside the rock matrix.
+Open the `.vtm` / `.vtu` files in **ParaView** (<https://paraview.org>) to see
+the fracture network inside the rock block: load the file, colour by
+`fracture_id` (fractures) or by `pressure` (simulation results).
 
 ---
 
-## 6. Optional — also run GEOS
+## Step 9 — Optional: also run the GEOS solver
 
-Stage *3 · Run GEOS* needs a GEOS binary (GEOS ships no Windows build):
+Everything above produces the **model**. Solving it needs a GEOS binary, which
+only exists for Linux. On Windows you have two choices:
 
-* **WSL2** — build once inside Ubuntu-on-WSL, then point *GEOS executable* at
-  the Linux path and set *GEOS backend* to `native`;
-* **Docker** — build a GEOS image once and set *GEOS backend* = `docker`,
-  *GEOS image* = your tag, *GEOS executable* = `/opt/geos/bin/geosx`.
+* **WSL2 (easiest)** — install Ubuntu from the Microsoft Store, and follow
+  `docs\INSTALL_ubuntu.md` inside it; run the panel from there too.
+* **Docker** — build a GEOS image once and set *GEOS backend* = `docker`.
+  Exact commands: `docs\INSTALL_windows.md`, section 5.
 
-Step-by-step commands are in `docs\INSTALL_windows.md` §5. Without it,
-everything up to the decks still works.
-
-When it runs, GEOS writes `*.pvd` + per-step `*.vtu` files; they appear under
-**Artifacts** and in the results ZIP.
+Without it, stage *3 · Run GEOS* fails fast with *"GEOS executable is not
+configured"* — that is expected and harmless: the mesh and decks are complete.
 
 ---
 
-## 7. If something goes wrong
+## Step 10 — Next time you use it
 
-| Symptom | Fix |
+Only two steps are needed after a restart:
+
+```powershell
+cd C:\dfn-project\dfn-geos-workbench
+python run_panel.py
+```
+
+…then open <http://localhost:8765>. Docker Desktop must be running.
+
+---
+
+## Troubleshooting
+
+| What you see | What to do |
 |---|---|
-| `docker: command not found` | Start Docker Desktop and reopen PowerShell |
-| Stage 1: *no intersecting fractures* | Enlarge fractures or lower *Mesh h* in the case form |
-| Stage 1: `MO DOES NOT EXIST: mo_poisson_pts` | Using a released LaGriT; switch backend to `docker` |
-| Stage 3: *GEOS executable is not configured* | Expected without step 6 |
-| Output files owned by `root` | Run the case from Docker Desktop's shared drive, or `docker run --rm -v "%cd%":/w ees16/dfnworks:latest chown -R 1000:1000 /w` |
-| Panel port busy | `python run_panel.py --port 9000` |
+| `'git' is not recognized` | Reinstall Git, then **close and reopen** PowerShell |
+| `'python' is not recognized` | Reinstall Python with *Add python.exe to PATH* ticked |
+| `'docker' is not recognized`, or *cannot connect to the Docker daemon* | Start Docker Desktop and wait for *Engine running* |
+| `python run_panel.py` → *No module named numpy* | Run `python -m pip install numpy` again |
+| Port 8765 already in use | `python run_panel.py --port 9000`, then open port 9000 |
+| Stage 1: *no intersecting fractures* | Make fractures larger, or lower *Mesh h* |
+| Stage 1: `MO DOES NOT EXIST: mo_poisson_pts` | Old LaGriT found — keep *dfnWorks backend* = `docker` |
+| Stage 3: *GEOS executable is not configured* | Expected without step 9 |
+| Case looks stuck at 0 % | Open **Log**; the first run pulls the image and can take minutes |
+| Files owned by `root` on Linux/WSL | `docker run --rm -v "$PWD":/w ees16/dfnworks:latest chown -R 1000:1000 /w` |
 
 ---
 
-*Command-line equivalents and the full reference: `docs\USER_GUIDE.md`,
-`docs\INSTALL_windows.md`, `report\feasibility_report.md`.*
+## One-page command summary
+
+```powershell
+mkdir C:\dfn-project
+cd C:\dfn-project
+git clone https://github.com/lanl/dfnWorks.git
+git clone https://github.com/sadafiiman/dfn-geos-workbench.git
+cd C:\dfn-project\dfn-geos-workbench
+python -m pip install numpy
+docker pull ees16/dfnworks:latest
+python run_panel.py
+```
+
+Settings: backend `docker` · image `ees16/dfnworks:latest` · repository
+`C:\dfn-project\dfnWorks`.
+
+---
+
+*Full reference: `docs\USER_GUIDE.md` (panel), `docs\INSTALL_windows.md`
+(platform + GEOS build), `report\feasibility_report.md` (technical results).*

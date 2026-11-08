@@ -52,6 +52,12 @@ dfn-geos-workbench/
 
 ```bash
 # 1) panel (no dependencies beyond Python + numpy)
+#    Windows, complete from zero:
+#      git clone https://github.com/lanl/dfnWorks.git
+#      git clone https://github.com/sadafiiman/dfn-geos-workbench.git
+#      cd dfn-geos-workbench && python -m pip install numpy
+#      docker pull ees16/dfnworks:latest
+#    then (every platform):
 python3 run_panel.py --port 8765        # open http://localhost:8765
 
 # Simplest workflow - ZIP in, ZIP out:
@@ -70,7 +76,7 @@ python3 dfn_to_geos.py --dfm-dir ../poc/output/dfm_mesh --out ../poc/geos_case
 python3 poly_to_geos_edfm.py --job-dir ../poc/output --out ../poc/geos_case_edfm
 
 # 3) run GEOS (wherever a geos binary is available)
-geos -i ../poc/geos_case/geos_dfn_fractures.xml
+geosx -i ../poc/geos_case_edfm/geos_dfn_edfm.xml   # EDFM deck (runs today)
 ```
 
 The panel drives the same three stages with one click; stage 1 runs natively

@@ -16,17 +16,26 @@ changes**. Two levels of support:
 | Converted *conformal* deck | generated, but needs a split matrix (see report §6.3) |
 | Converted *EDFM* deck | ✔ runs today (executed 49-step PoC) |
 
-## 0. Fast path (5 commands)
+## 0. Fast path (from zero)
 
 ```bat
-pip install numpy
-docker pull ees16/dfnworks:latest
+mkdir C:\dfn-project
+cd C:\dfn-project
+git clone https://github.com/lanl/dfnWorks.git
+git clone https://github.com/sadafiiman/dfn-geos-workbench.git
 cd dfn-geos-workbench
+python -m pip install numpy
+docker pull ees16/dfnworks:latest
 python run_panel.py
-:: open http://localhost:8765 → Quick process → drop a ZIP → Process
+:: open http://localhost:8765 → Settings → backend "docker"
+:: → Quick process → drop a ZIP → Process → Download results (.zip)
 ```
 
-In **Settings** set *dfnWorks backend* = `docker`. Everything else is optional.
+In **Settings** set *dfnWorks backend* = `docker`,
+*dfnWorks docker image* = `ees16/dfnworks:latest`,
+*dfnWorks repository* = the folder where you cloned dfnWorks.
+A step-by-step version written for people new to Git/Docker is
+[`TUTORIAL_windows.pdf`](TUTORIAL_windows.pdf).
 
 ## 1. Prerequisites
 
