@@ -254,6 +254,7 @@ python run_panel.py
 | Stage 1: `MO DOES NOT EXIST: mo_poisson_pts` | Old LaGriT found — keep *dfnWorks backend* = `docker` |
 | Stage 3: *GEOS executable is not configured* | Expected without step 9 |
 | Case looks stuck at 0 % | Open **Log**; the first run pulls the image and can take minutes |
+| Opening `dfn_edfm.pvd` shows **only XML text** | That is normal — it is data, not a picture. Open it in **ParaView** (step 8) |
 | Files owned by `root` on Linux/WSL | `docker run --rm -v "$PWD":/w ees16/dfnworks:latest chown -R 1000:1000 /w` |
 
 ---

@@ -324,6 +324,7 @@ detects `*.xml` and runs stage 3 on the runnable deck. Decks that only
 | Symptom | Cause / fix |
 |---|---|
 | Browser shows **gibberish / binary** instead of the panel | You are on a port owned by another program — start with `--port 9000` and open that |
+| Opening a `.pvd` / `.vtu` shows **only XML text** | That is correct — those files are data, not pictures. Open them in **ParaView** (see §10.2); the panel now says so on the preview page |
 | `cannot listen on port N` at startup | Port already used; the message prints the next port to try |
 | `'python' not found` (Ubuntu) | Use `python3` (or `apt install python-is-python3`) |
 | *"no intersecting fractures"* in the log | FRAM rejected all intersections: enlarge fractures / raise overlap, lower `h`, or use the default families |

@@ -36,6 +36,10 @@ MAX_UPLOAD = 512 * 1024 * 1024
 TEXT_EXTS = {".txt", ".dat", ".xml", ".inp", ".uge", ".md", ".json", ".log",
              ".py", ".csv", ".mlgi", ".lgi", ".yaml", ".yml", ".sty", ".h5s"}
 
+# These are text, but they are not readable data — they describe 3-D meshes
+# and time series that only a mesh viewer (ParaView/VisIt) can draw.
+MESH_EXTS = {".pvd", ".vtm", ".vtu", ".vtp", ".vtk", ".pvtu", ".pvtk"}
+
 _STAGE_LABELS = {
     STAGE_DFN_MESH: ("1 · dfnWorks mesh", "dfnGen → LaGriT → full_mesh"),
     STAGE_CONVERT: ("2 · Convert → GEOS", "VTK multi-block + XML decks"),
@@ -726,7 +730,8 @@ class Handler(BaseHTTPRequestHandler):
         target = panel.safe_relpath(case, query.get("path", ""))
         if not target or not target.is_file():
             return self._html(404, "Not found", "<div class='card'>No such file</div>")
-        if query.get("raw") == "1" or target.suffix not in TEXT_EXTS:
+        if query.get("raw") == "1" or (target.suffix.lower() not in TEXT_EXTS
+                                       and target.suffix.lower() not in MESH_EXTS):
             ctype = "application/octet-stream"
             data = target.read_bytes()
             self._send(200, data, ctype, {
@@ -736,6 +741,38 @@ class Handler(BaseHTTPRequestHandler):
         text = target.read_text(errors="replace")
         if len(text) > 400_000:
             text = text[:400_000] + "\n... (truncated preview)"
+        if target.suffix.lower() in MESH_EXTS:
+            hint = ""
+            if target.suffix.lower() == ".pvd":
+                hint = ("This is a <b>time-series index</b> — it only lists the "
+                        "time steps. It contains no geometry: to see the mesh "
+                        "and the results, open it with ParaView (File → Open → "
+                        "Apply), keeping the neighbouring folder next to it.")
+            elif target.suffix.lower() == ".vtm":
+                hint = ("This is a <b>multi-block mesh</b> (blocks → "
+                        "individual <code>.vtu</code> files). Open it with "
+                        "ParaView to see the geometry.")
+            else:
+                hint = ("This is a <b>3-D mesh/result file</b>. The text below "
+                        "is the raw data — open the file with ParaView "
+                        "(or VisIt) to see it.")
+            body = f"""
+        <div class="card-head"><h2><code>{R.esc(query.get('path'))}</code></h2>
+          <a class="btn" href="/case/{case_id}">← back</a></div>
+        <div class="card">
+          <p><b>Not a picture.</b> {hint}</p>
+          <p>ParaView (free): <a href="https://www.paraview.org/download/"
+             target="_blank" rel="noopener">paraview.org/download</a> —
+             install, then <i>File → Open</i> this file and click <i>Apply</i>.
+             Colour by <code>pressure</code>; use the time slider to animate.
+             More: <code>docs/USER_GUIDE.md</code> §10.</p>
+          <p><a class="btn" href="/case/{case_id}/file?raw=1&amp;path=
+             {R.esc(query.get('path'))}">⬇ download this file</a></p>
+          <details><summary>show raw contents (first 200 lines)</summary>
+            <pre class="log">{R.esc(chr(10).join(text.splitlines()[:200]))}</pre>
+          </details>
+        </div>"""
+            return self._html(200, target.name, body)
         body = f"""
         <div class="card-head"><h2><code>{R.esc(query.get('path'))}</code></h2>
           <a class="btn" href="/case/{case_id}">← back</a></div>
