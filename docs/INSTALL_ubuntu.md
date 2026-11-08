@@ -89,19 +89,54 @@ falls back to docker when no native LaGriT is configured).
 
 ## 4. GEOS
 
-GEOS is built from source (see the GEOS Quick Start guide). On a laptop the
-lightest useful configuration is serial/MIPI:
+The panel can run GEOS in a container, so you only need to build it **once**.
+The TPL image supplies every third-party library — you do **not** need the
+`thirdPartyLibs` directory (it is only used for a fully local build).
 
 ```bash
-git clone https://github.com/GEOS-DEV/GEOS.git
-cd GEOS && mkdir build && cd build
-../scripts/build_uberenv.sh          # third-party libraries
-cmake -C host-configs/<your>.cmake .. && make -j
+git clone https://github.com/GEOS-DEV/GEOS.git ~/GEOS
+docker pull geosx/ubuntu24.04-gcc13:364-1112
+cd ~/GEOS
+git submodule update --init --recursive
+UID_GID="$(id -u):$(id -g)"
+
+docker run --rm --user "$UID_GID" -e HOME=/tmp \
+  -v "$PWD/..:/work" -w /work/GEOS geosx/ubuntu24.04-gcc13:364-1112 \
+  bash -lc "git config --global --add safe.directory '*' && \
+  python3 scripts/config-build.py -hc /spack-generated.cmake -bt Release \
+  -bp /work/geos-build -ip /work/geos-install \
+  -DENABLE_HYPRE=ON -DENABLE_TRILINOS=OFF -DGEOS_LA_INTERFACE=Hypre \
+  -DENABLE_TESTS=OFF -DENABLE_EXAMPLES=OFF -DENABLE_BENCHMARKS=OFF \
+  -DDISABLE_UNIT_TESTS=ON"
+
+docker run --rm --user "$UID_GID" -e HOME=/tmp \
+  -v "$PWD/..:/work" -w /work/geos-build geosx/ubuntu24.04-gcc13:364-1112 \
+  make -j6 geosx
 ```
 
-Register the resulting `geos` binary path in the panel **Settings** page
-(`geos_exe`). Without a GEOS binary the panel still performs stages 1–2
-(dfnWorks meshing + conversion) and delivers the ready-to-run decks.
+> Build the **`geosx`** target (not `install`), and leave HPCReact enabled —
+> `-DENABLE_HPCREACT=OFF` breaks the reactive-transport sources in 1.1.0.
+
+Package the build so the panel can use it:
+
+```bash
+docker create --name geosimg geosx/ubuntu24.04-gcc13:364-1112
+docker cp ../geos-build geosimg:/opt/geos
+docker commit -c 'ENV LD_LIBRARY_PATH=/opt/geos/lib' geosimg dfn-geos:1.1
+docker rm -f geosimg
+```
+
+Then in **Settings** set:
+
+| Field | Value |
+|---|---|
+| GEOS backend | `docker` |
+| GEOS docker image | `dfn-geos:1.1` |
+| GEOS executable | `/opt/geos/bin/geosx` (path *inside* the image) |
+
+Stage 3 now runs as your user, so results stay writable without `sudo`.
+Without a GEOS image the panel still performs stages 1–2 and delivers the
+ready-to-run decks.
 
 ## 5. Run the panel
 

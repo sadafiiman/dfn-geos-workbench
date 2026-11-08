@@ -83,6 +83,7 @@ def build_edfm_deck(job_dir: Path, out_dir: Path, aperture: float = 1.0e-4,
 
     out_dir.mkdir(parents=True, exist_ok=True)
     n = matrix_cells_per_side
+    cx = dom[0] / n  # thickness of one matrix cell layer in x
     rect_xml = []
     for f in fracs:
         rect_xml.append(f"""    <Rectangle
@@ -140,10 +141,10 @@ def build_edfm_deck(job_dir: Path, out_dir: Path, aperture: float = 1.0e-4,
   <Geometry>
 {chr(10).join(rect_xml)}
 
-    <Box name="source" xMin="{{ {-dom[0] / 2 - 0.01}, {-dom[1] / 2 - 0.01}, {-dom[2] / 2 - 0.01} }}"
-                        xMax="{{ {-dom[0] / 2 + 0.01}, {dom[1] / 2 + 0.01}, {dom[2] / 2 + 0.01} }}"/>
-    <Box name="sink"   xMin="{{ {dom[0] / 2 - 0.01}, {-dom[1] / 2 - 0.01}, {-dom[2] / 2 - 0.01} }}"
-                       xMax="{{ {dom[0] / 2 + 0.01}, {dom[1] / 2 + 0.01}, {dom[2] / 2 + 0.01} }}"/>
+    <Box name="source" xMin="{{ {-dom[0] / 2 - 0.01:.6g}, {-dom[1] / 2 - 0.01:.6g}, {-dom[2] / 2 - 0.01:.6g} }}"
+                        xMax="{{ {-dom[0] / 2 + cx:.6g}, {dom[1] / 2 + 0.01:.6g}, {dom[2] / 2 + 0.01:.6g} }}"/>
+    <Box name="sink"   xMin="{{ {dom[0] / 2 - cx - 0.01:.6g}, {-dom[1] / 2 - 0.01:.6g}, {-dom[2] / 2 - 0.01:.6g} }}"
+                       xMax="{{ {dom[0] / 2 + 0.01:.6g}, {dom[1] / 2 + 0.01:.6g}, {dom[2] / 2 + 0.01:.6g} }}"/>
   </Geometry>
 
   <Events maxTime="50000">

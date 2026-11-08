@@ -19,6 +19,12 @@ Total time: about **20 minutes** (most of it is one large download).
 
 Plus two folders of code, downloaded in step 3.
 
+> **What you do NOT need:** no GEOS source clone, no `thirdPartyLibs` folder,
+> no C++ compiler, no Linux, no GPU. GEOS is only needed to *solve* the model
+> (optional step 9); its libraries come from a container image. The
+> `thirdPartyLibs` directory belongs to GEOS' own build system and is never
+> used by this project.
+
 ---
 
 ## Step 1 — Install the three programs
@@ -178,6 +184,10 @@ only exists for Linux. On Windows you have two choices:
   `docs\INSTALL_ubuntu.md` inside it; run the panel from there too.
 * **Docker** — build a GEOS image once and set *GEOS backend* = `docker`.
   Exact commands: `docs\INSTALL_windows.md`, section 5.
+
+Both options need the **GEOS source** (only to compile it once) but **not**
+`thirdPartyLibs`: the `geosx/ubuntu24.04-gcc13` image already contains every
+third-party library.
 
 Without it, stage *3 · Run GEOS* fails fast with *"GEOS executable is not
 configured"* — that is expected and harmless: the mesh and decks are complete.

@@ -107,7 +107,7 @@ class JobRunner:
                     if rc != 0:
                         break
 
-            if backend == "docker":
+            if backend == "docker" and job["stage"] != STAGE_GEOS_RUN:
                 self._chown_case(case_dir)
 
             details = collect_artifacts(job["stage"], case_dir, self.config, rc)
@@ -159,11 +159,16 @@ class JobRunner:
         image = self.config["dfnworks_docker_image"] or \
             "ees16/dfnworks:latest"
         try:
-            subprocess.run(["docker", "run", "--rm", "-v", f"{case_dir}:/w",
-                            image, "chown", "-R", f"{uid}:{os.getgid()}", "/w"],
-                           capture_output=True, timeout=120)
-        except (OSError, subprocess.SubprocessError):
-            pass
+            proc = subprocess.run(
+                ["docker", "run", "--rm", "--entrypoint", "chown",
+                 "-v", f"{case_dir}:/w", image,
+                 "-R", f"{uid}:{os.getgid()}", "/w"],
+                capture_output=True, timeout=900)
+            if proc.returncode != 0:
+                print(f"warning: could not restore ownership of "
+                      f"{case_dir} (chown rc={proc.returncode})", flush=True)
+        except (OSError, subprocess.SubprocessError) as exc:
+            print(f"warning: chown step failed: {exc}", flush=True)
 
     def _dockerize(self, argv: list[str], env: dict, case_dir: Path,
                    stage: str) -> tuple[list[str], dict]:
@@ -186,7 +191,13 @@ class JobRunner:
         env = {k: v for k, v in env.items()
                if k != "PYTHONPATH" and not k.startswith("LAGRIT")}
         argv = ["docker", "run", "--rm", "-v", f"{case_dir}:{workdir}",
-                "-w", workdir, image] + inner
+                "-w", workdir]
+        # The GEOS stage only reads the deck and writes plain files, so it can
+        # run as the host user: outputs stay user-owned and need no chown.
+        if stage == STAGE_GEOS_RUN and getattr(os, "getuid", lambda: 0)() != 0:
+            argv += ["--user", f"{os.getuid()}:{os.getgid()}",
+                     "-e", "HOME=/tmp"]
+        argv += [image] + inner
         # NOTE: the container runs as root because pydfnworks writes an
         # .install_date marker into its site-packages at import time (which a
         # non-root user cannot do).  File ownership on the host is restored

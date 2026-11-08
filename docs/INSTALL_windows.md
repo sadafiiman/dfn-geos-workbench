@@ -48,9 +48,14 @@ A step-by-step version written for people new to Git/Docker is
 
 ```bat
 git clone https://github.com/lanl/dfnWorks.git
-git clone https://github.com/GEOS-DEV/GEOS.git
+git clone https://github.com/sadafiiman/dfn-geos-workbench.git
 docker pull ees16/dfnworks:latest
+:: optional — only to build the GEOS solver (section 5):
+git clone https://github.com/GEOS-DEV/GEOS.git
 ```
+
+You do **not** need `thirdPartyLibs`: it is only used by a fully local GEOS
+build, and the `geosx/ubuntu24.04-gcc13` image already ships every dependency.
 
 ## 3. Run the panel
 
