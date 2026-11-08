@@ -56,6 +56,7 @@ class TestAvsUcdReader(unittest.TestCase):
 @unittest.skipUnless(GEOS_CASE.joinpath("case.vtm").exists(),
                      "run conversion/dfn_to_geos.py first")
 class TestGeosCase(unittest.TestCase):
+    @unittest.skipUnless(HAVE_VTK, "vtk not installed")
     def test_vtm_block_names(self):
         mb = vtk.vtkXMLMultiBlockDataReader()
         mb.SetFileName(str(GEOS_CASE / "case.vtm"))

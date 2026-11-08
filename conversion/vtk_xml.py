@@ -28,7 +28,7 @@ def _fmt_array(values: np.ndarray) -> str:
 
 
 def _data_array(name: str, values: np.ndarray, num_components: int = 1,
-                dtype: str | None = None) -> str:
+                dtype: str | None = None, id_type: bool = False) -> str:
     values = np.asarray(values)
     if dtype is None:
         dtype = {np.dtype(np.int8): "Int8", np.dtype(np.int32): "Int32",
@@ -37,7 +37,10 @@ def _data_array(name: str, values: np.ndarray, num_components: int = 1,
                  np.dtype(np.float64): "Float64"}.get(values.dtype,
                                                       "Float64")
     ncomp = f' NumberOfComponents="{num_components}"' if num_components > 1 else ""
-    return (f'        <DataArray type="{dtype}" Name="{name}"{ncomp} '
+    # IdType="1" is what vtkXMLReader uses to accept the array as vtkIdTypeArray
+    # (required for GEOS GlobalIds / collocated_nodes fields).
+    idattr = ' IdType="1"' if id_type else ""
+    return (f'        <DataArray type="{dtype}"{idattr} Name="{name}"{ncomp} '
             f'format="ascii">\n          {_fmt_array(values)}\n'
             f"        </DataArray>\n")
 
@@ -79,6 +82,18 @@ def write_vtu(path, points, cell_blocks, point_data=None, cell_data=None,
     point_data = point_data or {}
     cell_data = cell_data or {}
 
+    # Arrays that must materialise as vtkIdTypeArray in the reader.
+    id_arrays = {"GlobalIds", "collocated_nodes",
+                 "GLOBAL_IDS_POINTS", "GLOBAL_IDS_CELLS"}
+    # VTK only exposes GetGlobalIds() when the <PointData>/<CellData> tag names
+    # the global-id array.  GEOS requires that (useGlobalIds="1").
+    pd_attrs = ""
+    if "GlobalIds" in point_data:
+        pd_attrs = ' GlobalIds="GlobalIds"'
+    cd_attrs = ""
+    if "GlobalIds" in cell_data:
+        cd_attrs = ' GlobalIds="GlobalIds"'
+
     if binary_float32:
         # VTK inline "binary" format = base64 of [UInt32 length header][data]
         payload = points.astype(np.float32).tobytes()
@@ -95,18 +110,18 @@ def write_vtu(path, points, cell_blocks, point_data=None, cell_data=None,
                         f"          {_fmt_array(points)}\n"
                         f"        </DataArray>\n      </Points>\n")
 
-    pd_block = "      <PointData>\n"
+    pd_block = f"      <PointData{pd_attrs}>\n"
     for name, arr in point_data.items():
         arr = np.asarray(arr)
         ncomp = arr.shape[1] if arr.ndim == 2 else 1
-        pd_block += _data_array(name, arr, ncomp)
+        pd_block += _data_array(name, arr, ncomp, id_type=name in id_arrays)
     pd_block += "      </PointData>\n"
 
-    cd_block = "      <CellData>\n"
+    cd_block = f"      <CellData{cd_attrs}>\n"
     for name, arr in cell_data.items():
         arr = np.asarray(arr)
         ncomp = arr.shape[1] if arr.ndim == 2 else 1
-        cd_block += _data_array(name, arr, ncomp)
+        cd_block += _data_array(name, arr, ncomp, id_type=name in id_arrays)
     cd_block += "      </CellData>\n"
 
     xml = (

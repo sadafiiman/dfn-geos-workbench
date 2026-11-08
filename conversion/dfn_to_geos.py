@@ -125,9 +125,10 @@ def convert(dfm_dir: str, out_dir: str, aperture: float = 1.0e-4,
                            "matrix node -- meshes are not conforming")
 
     # Assign GlobalIds: matrix nodes first, then fracture-duplicate nodes.
+    # VTK/GEOS global ids are 0-based contiguous (as in GEOS' own .vtu fixtures).
     n_matrix_nodes = matrix.num_nodes
-    matrix_point_gid = np.arange(1, n_matrix_nodes + 1, dtype=np.int64)
-    matrix_cell_gid = np.arange(1, n_matrix_cells + 1, dtype=np.int64)
+    matrix_point_gid = np.arange(0, n_matrix_nodes, dtype=np.int64)
+    matrix_cell_gid = np.arange(0, n_matrix_cells, dtype=np.int64)
 
     # For every fracture node: global id of the co-located MATRIX node.
     collocated = matrix_point_gid[node_map]
@@ -140,8 +141,8 @@ def convert(dfm_dir: str, out_dir: str, aperture: float = 1.0e-4,
     point_offset = 0
     for k, frac in enumerate(fractures, start=1):
         n_pts = frac.num_nodes
-        f_point_gid.extend(range(gid_offset + point_offset + 1,
-                                 gid_offset + point_offset + n_pts + 1))
+        f_point_gid.extend(range(gid_offset + point_offset,
+                                 gid_offset + point_offset + n_pts))
         point_offset += n_pts
         base = sum(len(f.points) for f in fractures[:k - 1])
         local = node_map[base:base + n_pts]
@@ -151,7 +152,7 @@ def convert(dfm_dir: str, out_dir: str, aperture: float = 1.0e-4,
             if t != "tri":
                 continue
             tri_blocks.extend(nodes)
-            f_cell_gid.append(len(f_cell_gid) + 1)
+            f_cell_gid.append(len(f_cell_gid))
             fracture_id.append(m if mats is not None else k)
 
     n_fractures = len(set(fracture_id))

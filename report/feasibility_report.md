@@ -7,9 +7,9 @@ mesh-import capabilities and element types — and, decisively, whether GEOS can
 *preserve and computationally use* the fracture surfaces, their connectivity and their
 interaction with the surrounding rock matrix.
 
-**Versions examined.** dfnWorks `master` (repo cloned at `/home/kiman/Downloads/behnam/dfnWorks`,
+**Versions examined.** dfnWorks `master` (repo cloned at `/home/iman/projects/behnam/dfnWorks`,
 pydfnworks + DFNGen 2.3 + LaGriT-driven meshing) and GEOS `master`
-(`/home/kiman/Downloads/behnam/GEOS`, mesh generators and solvers reviewed at source level).
+(`/home/iman/projects/behnam/GEOS`, mesh generators and solvers reviewed at source level).
 
 ---
 
@@ -20,12 +20,18 @@ pydfnworks + DFNGen 2.3 + LaGriT-driven meshing) and GEOS `master`
 | Can GEOS *directly* import a dfnWorks mesh file? | **No.** dfnWorks writes AVS/UCD (`.inp`), UGE, LaGriT-binary and (for DFM) Exodus II; GEOS imports only the VTK family (`vtu/vtp/vtm/pvtu/...`). |
 | Can GEOS represent explicit fractures inside the matrix? | **Yes** — two supported mechanisms: *conforming face elements* (`SurfaceElementRegion`, `subRegionType="faceElement"`) and *embedded elements* (EDFM/EFEM, `subRegionType="embeddedElement"`). |
 | Which element types / formulations support this? | Matrix: C3D4/C3D5/C3D6/C3D8/n-gonal prisms. Fractures: triangles → `FaceElementSubRegion` (wedges with default aperture, `ParallelPlatesPermeability`) or embedded `Triangle`-based surfaces with displacement-jump enrichment (EFEM) / transmissibility stencils (EDFM). FV (TPFA/hybrid) and FE (Lagrange, contact) formulations both apply. |
-| What conversion is required? | A format conversion UCD/Exodus → VTK XML multi-block (`.vtm`) with `GlobalIds` + `collocated_nodes` on the fracture face block — implemented in this workbench (`conversion/dfn_to_geos.py`). |
-| Recommended approach | **Option B (conversion), with two GEOS targets:** (1) the conforming DFM mesh of dfnWorks converted to a `.vtm` with a face block → *conformal* fracture–matrix flow; (2) fracture outlines reconstructed as GEOS `Rectangle` geometry → EDFM. Option A is impossible without changing GEOS; Option C alone loses the exact dfnWorks triangulation. |
+| What conversion is required? | UCD/Exodus → VTK XML multi-block (`.vtm`) with *flagged* `GlobalIds` + `collocated_nodes` on the fracture face block — implemented in `conversion/dfn_to_geos.py`. The conforming GEOS path additionally needs the matrix **split** along the fracture surfaces; the embedded (EDFM) path needs only the fracture outlines — implemented in `conversion/poly_to_geos_edfm.py`. |
+| Recommended approach | **Option B (conversion), with two GEOS targets:** (1) **EDFM** — fracture outlines as embedded elements inside an `InternalMesh` matrix; *proven end-to-end here* (§7); (2) **conformal** — the converted DFM mesh as a face block, which additionally requires a split matrix (§3). Option A is impossible without changing GEOS; Option C alone loses the exact dfnWorks triangulation. |
 
-A complete proof-of-concept accompanies this report (§7): a dfnWorks-generated
-fracture network is converted and delivered to GEOS both as an explicit, conformal
-fracture surface and as EDFM geometry, including the surrounding rock matrix.
+A working proof-of-concept accompanies this report (§7): the dfnWorks fracture
+network was run **through GEOS** as embedded fractures inside the rock matrix —
+49 time steps, converged pressure (matrix 0.37–2.0 MPa, fractures 0.98–1.57 MPa)
+and a derived Darcy velocity field (2.4 × 10⁻¹³ … 7.3 × 10⁻¹⁰ m/s). The
+conformal face-block deck is generated and reaches GEOS' face-mapping stage; it
+stops there because that representation requires the matrix to be split along
+the fractures (§3). The conversion toolchain was also exercised against GEOS'
+own sample inventory: **78 runnable decks, 62 pass, 16 explained
+non-passes** (§6.2).
 
 ---
 
@@ -178,23 +184,30 @@ not elements (`splitCellsByType`, `writeSurfaces`).
 
 ## 3. Direct mesh compatibility test (activity 3)
 
-**Test performed.** dfnWorks output files (`full_mesh.inp`, UGE, DFM
-`dfm_tet_mesh.inp` + facets) were offered to GEOS's import path unmodified.
+**Test performed — executed, not inferred.** GEOS `1.1.0` was built from the
+cloned source (see §7.0) and the dfnWorks outputs were offered to its import
+path unmodified. The fixture `geos-tests/direct_import/direct_import.xml` is
+the stock `inputFiles/singlePhaseFlow/vtk/3D_10x10x10_compressible_hex_gravity_base.xml`
+with its VTK file replaced by `full_mesh.inp`.
 
 | Check | Result |
 |---|---|
-| File format accepted by `VTKMesh`? | **No.** `.inp`/`.uge`/`.exo` are not in the VTKMesh extension list — import aborts immediately (`... is not a recognized extension`). |
-| If converted verbatim to `.vtu` (same nodes/cells/attributes)? | Nodes and triangles/tets load; but `full_mesh.inp` contains **only** fracture triangles → they would become node sets, **not** elements (GEOS needs dim-3 cells for cell blocks); the mesh has no matrix, so no fracture–matrix coupling is possible; `material` attribute would split blocks but there is nothing to couple. |
-| Conforming DFM mesh as a single `.vtu`? | Matrix tets + fracture triangles in one file: triangles again demoted to node sets — the fracture would be **invisible** to the solver. |
-| Fracture connectivity preserved? | Only via the `.vtm` face-block route, which additionally demands `GlobalIds` + `collocated_nodes` — absent in raw dfnWorks output. |
-| Unsupported features found | Quadratic elements (n/a in dfnWorks), polyhedra >11-gonal (n/a), string-typed arrays (n/a), non-conformal block offsets (n/a). The blocking incompatibilities are purely format-level and representation-level, not geometric. |
+| File format accepted by `VTKMesh`? | **No — rc=1 before any geometry is read.** `Invalid value 'inp' of type VTKMeshExtension. Valid options are: vtm, vtk, vtu, vtr, vts, vti, vtp, pvtu, pvtr, pvts, pvti, pvtp` (stack: `EnumStrings<VTKMeshExtension>::fromString` ← `vtk::loadMesh` ← `loadAllMeshes` ← `VTKMeshGenerator::fillCellBlockManager`). |
+| Naive re-wrap as `.vtu` (same nodes/cells/attributes)? | Loads geometrically, but `full_mesh.inp` contains **only** fracture triangles: GEOS demotes 2-D cells to node sets, so the fracture would be **invisible** to the solver, and there is no matrix to couple to. |
+| Conforming DFM mesh as one `.vtu`? | Same demotion: matrix tets become a cell block, fracture triangles become node sets. |
+| Converted `.vtm` with a face block? | Gets past the format layer, then fails on two GEOS contracts, both found by running: (i) `Global IDs strictly required (useGlobalId > 0) but unavailable` — GEOS needs `GlobalIds` *flagged* on `<PointData>`/`<CellData>`, not merely named `GlobalIds`; (ii) after fixing that, `Internal error when trying to connect matrix mapping and fracture mapping. Face 448079 seems wrongly connected.` |
+| Why (ii) happens | `FaceManager::connect2dElems` requires each fracture face to be a **boundary face** of the matrix (exactly one 3-D neighbour), and `VTKFaceBlockUtilities::buildElem2dTo3dElemAndFaces` matches fractures only against boundary cells. A *conforming but unsplit* DFM mesh cannot satisfy this: its fracture faces are interior, shared by two tets. |
+| Fracture connectivity preserved? | Yes at the data level: 1 163 fracture nodes, 1 862 triangles, `collocated_nodes` all resolving into matrix GlobalIds with 0 coordinate mismatches. But the conforming path additionally requires a **split** matrix (duplicated nodes either side of each fracture). |
+| Unsupported features found | Quadratic cells (n/a in dfnWorks), polyhedra >11-gonal (n/a), string-typed arrays (n/a). The blocking incompatibilities are format-level (AVS/UCD not accepted) and representation-level (2-D cells demoted; unsplit matrix), not geometric. |
 
-**Conclusion of the direct test:** byte-level direct import fails for format
-reasons, and even after a naive format change the fracture surfaces are not
-*computationally usable* — the decisive distinction the task asks about. The
-information needed to couple fractures to the matrix (facet→tet incidence,
-shared nodes) exists in dfnWorks output (`facets_*.table`, conforming nodes) and
-must be carried into the VTK structures GEOS expects.
+**Conclusion of the direct test:** direct import fails at the extension check.
+After conversion the fracture geometry is *preserved* but becomes
+*computationally usable* only when the mesh is reorganised into the structures
+GEOS defines — a flagged `GlobalIds` pair, a face block with
+`collocated_nodes`, and (for the conforming path) a matrix split along the
+fracture surfaces. That is exactly the conversion implemented here; the EDFM
+path (§7) avoids the split by embedding the fractures in an `InternalMesh`
+matrix.
 
 ---
 
@@ -207,7 +220,7 @@ must be carried into the VTK structures GEOS expects.
 | Fracture–matrix coupling | — | conformal face elements (exact) | EDFM transmissibilities (approximate) |
 | Matrix mesh | missing in DFN-only mode | DFM tets converted as-is | `InternalMesh` hex box |
 | Effort | n/a (would require writing a UCD/Exodus reader inside GEOS) | moderate; implemented here | small; implemented here |
-| Recommended | ✗ | **✓ primary** | ✓ fallback / cross-check |
+| Recommended | ✗ | **✓ primary** (EDFM executed; conformal after matrix split) | ✓ cross-check |
 
 **Recommended: Option B**, producing a VTK *multi-block* (`.vtm`) case:
 
@@ -219,20 +232,23 @@ case.vtm
 ```
 
 with `collocated_nodes` obtained from the conforming DFM mesh (each fracture node
-*is* a matrix node — the mapping is identity after coordinate matching; for
-non-conforming cases the converter falls back to geometric matching). This
-exactly satisfies the requirements discovered in the GEOS source
-(`useGlobalIds`, `faceBlocks`, `collocated_nodes`) and preserves **all** dfnWorks
-information: node positions, triangle connectivity, fracture ids, intersection
-lines (as shared fracture nodes) and the fracture→matrix incidence (as
-conformal faces).
+*is* a matrix node — the mapping is identity after coordinate matching). The
+`.vtm` satisfies the data contract GEOS imposes (`useGlobalIds`, `faceBlocks`,
+`collocated_nodes`) and preserves node positions, triangle connectivity,
+fracture ids and the fracture→matrix incidence for **1 862 of the 1 948 DFN
+triangles (95.6 %)**; the 86 missing triangles (4.41 %) are slivers at
+intersection lines that `mesh_dfm(allowed_percentage=5)` does not recover (see
+§7). One further structural step is required for this path: GEOS' face mapping
+accepts only faces that are **boundary** faces of the matrix, so the matrix must
+be split along the fracture surfaces (duplicated nodes on each side) before the
+deck can run (§3).
 
 Option C is provided as a second deck (`geos_dfn_edfm.xml`): fracture outlines
 from `polys/poly_<i>.inp` become oriented `Rectangle` objects; GEOS's
 `EmbeddedSurfaceGenerator` re-discretises them inside an `InternalMesh` matrix.
-Useful as a robustness cross-check and when no DFM mesh is available, at the
-cost of losing the exact dfnWorks triangulation (and of EDFM's approximate
-fracture–matrix transmissibility).
+This is the path that **ran to completion** in this study (§7), at the cost of
+losing the exact dfnWorks triangulation and using approximate EDFM
+fracture–matrix transmissibilities.
 
 ---
 
@@ -261,34 +277,103 @@ fracture–matrix transmissibility).
    `mesh_dfm()` (LaGriT-with-Exodus build) — because GEOS requires conformity
    and its embedded path cannot consume arbitrary triangle soups.
    All of these are implemented in `conversion/dfn_to_geos.py`.
-5. **Recommended integration approach?** Option B with the two conversion
-   targets above: conformal (exact dfnWorks mesh, preferred) and EDFM
-   (geometry reconstruction, fallback). Keep dfnWorks as the DFN generator and
-   GEOS as the coupled simulator; the panel automates the pipeline.
+5. **Recommended integration approach?** Option B (conversion), delivered as two
+   targets: **EDFM** — fracture outlines → embedded elements, executed and
+   converged here, so it is the recommended default; and **conformal** — the
+   exact dfnWorks DFM mesh as a face block, which requires splitting the matrix
+   along the fracture surfaces and is the next implementation step. Keep
+   dfnWorks as the DFN generator and GEOS as the coupled simulator; the panel
+   automates the pipeline.
 
 ---
 
 ## 6. The decisive question — is the integration technically viable?
 
-Yes. The fracture surfaces are not merely *readable* after conversion — they are
-**computationally live** in GEOS:
+**Yes — demonstrated by an executed, converged coupled simulation**, and
+cross-checked against GEOS' own sample inventory.
 
-* in the conformal path, every fracture triangle becomes a `FaceElementSubRegion`
-  element with its own pressure/aperture dofs; fluxes between fracture elements
-  and between fracture and matrix use the exact shared nodes/edges produced by
-  LaGriT, so the dfnWorks intersection connectivity (`intersection_list.dat`
-  ↔ shared nodes) is preserved bit-for-bit;
-* in the EDFM path, fracture–matrix interaction is reconstructed numerically
-  (stencil-based transmissibilities + intersection enrichment), which is the
-  standard approach when conformity cannot be guaranteed.
+### 6.1 Executed evidence
 
-Both paths were exercised end-to-end in the proof of concept (§7).
+GEOS `1.1.0` was built from the cloned source and the EDFM deck of §7 was run
+to completion:
+
+* **rc = 0**, 49 time steps (`dt = 1000 s`, `maxTime = 50000 s`), every step
+  `Linear Solver | Success | Iterations: 1 | Final Rel Res ≈ 2 × 10⁻¹¹`;
+* the matrix (8 000 hex cells) and the fracture network (**595 embedded
+  surface elements**, aperture 10⁻⁴ m, area 0.09 m²) are solved together;
+* pressure: matrix **0.369 – 2.000 MPa**, fractures **0.983 – 1.569 MPa** —
+  the imposed 1 MPa drop across the domain is carried by the network and the
+  matrix responds to it;
+* a Darcy velocity reconstructed from the solution is
+  **2.4 × 10⁻¹³ … 7.3 × 10⁻¹⁰ m/s** (median 1.7 × 10⁻¹⁰ m/s), consistent with
+  `k = 5 × 10⁻¹⁹ m²`, `μ = 10⁻³ Pa s` and the observed gradient.
+
+Artifacts: `poc/geos_case_edfm/dfn_edfm.pvd` (time series),
+`.../000050/matrix/Level0/{RockMatrix,Fracture}/rank_0.vtu`, and
+`validation/velocity/velocity.{csv,vtu}`.
+
+This is the distinction the task asks about: the fractures are not merely
+readable — they own degrees of freedom, exchange flux with the matrix, and
+change the flow field.
+
+### 6.2 Validation against the GEOS sample inventory
+
+To test the capability claims beyond our own case, every shipped deck under
+`GEOS/inputFiles` was screened for mesh/fracture relevance and executed with the
+same binary: **90 candidates, 78 runnable, 12 excluded for missing external
+data** (the repository ships no `MESH/` or `GEOSDATA/` payloads).
+
+Result: **62 pass, 13 fail, 3 timeout** — and every non-pass is explained:
+
+| Cause | Decks | Assessment |
+|---|---|---|
+| Stale sample XML vs. current source (`totalDisplacement`, `traction` wrappers) | 5 (lagrangianContactMechanics) | sample-repo drift, not a capability gap |
+| Empty/LFS mesh data (`0 cells`, 128-byte pointer `.vti`) | 3 | missing data |
+| Field/set targeting errors (`empty set`, unreferenced region attributes, `long long` node set) | 5 | sample/config defects |
+| Timeouts on heavy benchmarks (direct solve > 100 k DOF) | 3 | runtime budget, not correctness |
+
+The four initial 240 s timeouts were retried with a 900 s budget: one
+(`poromechanicsFractures/…/yieldAcceleration/validation_case_smoke_fim.xml`)
+**passes in 371 s**, and the remaining three are genuine benchmarks
+(`SneddonRotated_benchmark2`, `PoroElastic_efem-edfm_pennyCrack_benchmark`,
+`SPE11b`) that simply need more than 15 minutes. None of them fails on mesh
+representation.
+
+One shipped deck did expose a real contract drift: `singlePhaseFlowFractures/
+fractureFlow_conforming_2d_vtk_input.xml` failed because its `fracture.vtu`
+still carried the legacy `duplicated_nodes` field and no `GlobalIds`. Repairing
+the fixture copy (rename to `collocated_nodes`, add 0-based `IdType="1"`
+`GlobalIds` on points and cells) makes it **pass (rc = 0, 10 steps, residuals
+~10⁻¹⁶)** — exactly the two properties `dfn_to_geos.py` already emits. That
+blind-repair test is independent confirmation that the converter's VTK contract
+is the one GEOS actually requires.
+
+Requirements coverage of the runnable set (`validation/REQUIREMENTS.md`):
+external VTK import 45/33, explicit fracture region **27/27**, conformal face
+elements **18/18**, embedded elements 22/17, matrix region 33/31,
+fracture–matrix coupling **27/27**. Of the seven decks combining **external mesh
++ conformal fracture + matrix + coupling**, **all seven pass** — the five
+`ALM_inclinedFault_*` cases, `singlePhaseFlowFractures/
+fractureFlow_conforming_2d_vtk_input.xml` (after the fixture repair) and
+`surfaceGeneration/cube_8.xml`. No deck that exercises explicit fracture
+representation or fracture–matrix coupling fails.
+
+### 6.3 Conformal path status
+
+The converted conformal case (`poc/geos_case`) is accepted up to GEOS' face
+mapping and fails there because the DFM matrix is *unsplit*: GEOS requires each
+fracture face to be a boundary face of the matrix (§3). Producing that split
+(duplicate nodes on either side of every fracture, multi-component
+`collocated_nodes`) is a well-defined extension of `dfn_to_geos.py` and does not
+change the viability conclusion — it is an implementation step, not a
+capability limit. The EDFM path already demonstrates coupled fracture–matrix
+flow without it.
 
 ---
 
 ## 7. Proof of concept
 
-Location: `/home/kiman/Downloads/behnam/dfn-geos-workbench/`.
+Location: `/home/iman/projects/behnam/dfn-geos-workbench/`.
 
 1. **dfnWorks run** (`poc/run_dfn_example.py`, executed inside the official
    `ees16/dfnworks` docker image with the workbench mounted at `/app`):
@@ -297,8 +382,9 @@ Location: `/home/kiman/Downloads/behnam/dfn-geos-workbench/`.
    (1 120 nodes / 1 948 triangles), `full_mesh*.uge`, `polys/`,
    `intersections/`, `materialid.dat`; plus the conforming DFM stage
    (`poc/run_dfm.py` → `dfm_mesh/dfm_tet_mesh.inp`: 41 382 nodes / 220 681
-   tets; `facets/facets_f1..5.inp` + tables; 3.08 % of DFN elements absent
-   from the DFM mesh — sliver triangles at intersection lines — accepted by
+   tets; `facets/facets_f1..5.inp` + tables; 86 of the 1 948 DFN triangles
+   (**4.41 %**; per fracture 0 / 5.5 / 1.6 / 8.0 / 11.6 %) are absent from the
+   DFM mesh — sliver triangles at intersection lines — accepted by
    raising `mesh_dfm(allowed_percentage=5)`, documented as a practical caveat).
 2. **Conversion** (`conversion/dfn_to_geos.py`, pure numpy + stdlib):
    *matrix* tets → `main.vtu` (`attribute=1`, point/cell `GlobalIds`),
@@ -319,26 +405,46 @@ Location: `/home/kiman/Downloads/behnam/dfn-geos-workbench/`.
    * `geos_case/geos_dfn_fractures.xml` — `VTKMesh file="case.vtm"`
      `faceBlocks="{fracture}"` `useGlobalIds="1"`, `SinglePhaseFVM` on
      `{Region, Fracture}`, `ParallelPlatesPermeability`, injection/production
-     on the ±X fracture ends;
+     on ±X. **Runs to GEOS' fracture-face mapping and stops there**: the DFM
+     matrix is unsplit, and GEOS requires each fracture face to be a boundary
+     face of the matrix (§3, §6.3).
    * `geos_case_edfm/geos_dfn_edfm.xml` — `InternalMesh` 20³ hex grid + one
      oriented `Rectangle` per dfnWorks fracture (origin/normal/length-vector
      extracted from `polys/poly_<i>.inp` by plane fitting) + `SoloEvent`
      `preFracture` → `EmbeddedSurfaceGenerator` + `SinglePhaseFVM`
-     (`subRegionType="embeddedElement"`).
-4. **Management panel** (`python run_panel.py`, stdlib-only): case management,
-   file upload/download/preview, one-click pipeline — verified end-to-end in
-   this environment: case `docker_case` → job #9 (dfnWorks mesh, docker
-   backend) rc=0 with all artifacts registered → job #10 (conversion, native)
-   rc=0 → `geos_case/` produced. Stage 3 executes GEOS as soon as `geos_exe`
-   is configured in the panel settings (native or docker). A **Quick process**
-   page additionally accepts a ZIP of dfnWorks files (or outputs), auto-detects
-   what to run, chains the stages and returns all results as a single
-   downloadable ZIP (verified: a 3.6 MB zip of `full_mesh.inp` + `dfm_mesh/` +
-   `polys/` produced both GEOS decks in one automatic conversion job).
+     (`subRegionType="embeddedElement"`). **Runs to completion — see 5.**
+4. **Executed simulation** (GEOS built from the cloned source: version 1.1.0,
+   sha1 `ef14524e1b`, gcc 13.3.0, hypre + SuperLU_Dist, executable
+   `geos-build/bin/geosx`, invoked in the `geosx/ubuntu24.04-gcc13:364-1112`
+   container). The EDFM deck returns **rc = 0** after 49 steps of 1000 s:
+   * every step `Linear Solver | Success | Iterations: 1 | Final Rel Res ≈ 2 × 10⁻¹¹`;
+   * matrix 8 000 hex cells, pressure 0.369–2.000 MPa;
+   * fracture network **595 embedded elements**, aperture 10⁻⁴ m, area 0.09 m²,
+     pressure 0.983–1.569 MPa;
+   * reconstructed Darcy velocity 2.4 × 10⁻¹³ … 7.3 × 10⁻¹⁰ m/s.
+   Outputs: `poc/geos_case_edfm/dfn_edfm.pvd`,
+   `.../000050/matrix/Level0/{RockMatrix,Fracture}/rank_0.vtu`,
+   `validation/velocity/velocity.{csv,vtu}`.
+5. **Sample-deck validation**: all 78 runnable GEOS sample decks were executed
+   with the same binary (62 pass / 13 fail / 3 timeout, every non-pass
+   explained) — `validation/RESULTS.md` and `validation/REQUIREMENTS.md`.
+6. **Management panel** (`python run_panel.py`, stdlib-only): case management,
+   file upload/download/preview, one-click pipeline. Verified in this
+   environment: case `docker_case` → job #9 (dfnWorks mesh, docker backend)
+   rc=0 with all artifacts registered → job #10 (conversion, native) rc=0 →
+   `geos_case/` produced. Stage 3 invokes GEOS when `geos_exe` is configured
+   (it was not on the original development host; all GEOS runs in this report
+   were made from the command line against the built binary). A **Quick
+   process** page additionally accepts a ZIP of dfnWorks files (or outputs),
+   auto-detects what to run, chains the stages and returns all results as a
+   single downloadable ZIP (verified: a 3.6 MB zip of `full_mesh.inp` +
+   `dfm_mesh/` + `polys/` produced both GEOS decks in one automatic conversion
+   job).
 
 Run order: `run_dfn_example.py` + `run_dfm.py` (or panel stage 1) →
-`dfn_to_geos.py` (panel stage 2) → `geos -i geos_case/geos_dfn_fractures.xml`
-(panel stage 3, requires a GEOS executable configured in the panel settings).
+`dfn_to_geos.py` / `poly_to_geos_edfm.py` (panel stage 2) →
+`geosx -i geos_case_edfm/geos_dfn_edfm.xml` (panel stage 3, requires a GEOS
+executable configured in the panel settings).
 
 ---
 

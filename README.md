@@ -84,7 +84,8 @@ in *Settings*).
 | Direct import of dfnWorks meshes into GEOS | **No** — GEOS reads VTK only; dfnWorks writes AVS/UCD, UGE, LaGriT binary, Exodus |
 | Explicit fracture representation in GEOS | **Yes** — conformal `SurfaceElementRegion` (face elements from a `.vtm` face block) or EDFM/EFEM embedded elements |
 | Required conversion | UCD → VTK multi-block with `GlobalIds` + `collocated_nodes` + `attribute` regions + `aperture` field — implemented and verified |
-| Recommended approach | **Option B** (conversion), conformal path primary, EDFM path fallback |
+| Recommended approach | **Option B** (conversion): EDFM executed and converged; conformal path generated, needs a split matrix |
+| Validation against GEOS samples | **78 runnable decks from `GEOS/inputFiles`: 62 pass**; every explicit-fracture (27/27), conformal (18/18) and fracture–matrix coupling (27/27) deck passes |
 
 See `report/feasibility_report.md` for the full assessment, including the
 LaGriT deployment caveats discovered during the study.

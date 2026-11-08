@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<VTKFile type="Collection" version="0.1">
+	<Collection>
+		<DataSet timestep="0" file="dfn_edfm/000000.vtm" />
+		<DataSet timestep="10000" file="dfn_edfm/000010.vtm" />
+		<DataSet timestep="20000" file="dfn_edfm/000020.vtm" />
+		<DataSet timestep="30000" file="dfn_edfm/000030.vtm" />
+		<DataSet timestep="40000" file="dfn_edfm/000040.vtm" />
+		<DataSet timestep="50000" file="dfn_edfm/000050.vtm" />
+	</Collection>
+</VTKFile>
