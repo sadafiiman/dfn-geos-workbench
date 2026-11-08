@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -18,6 +19,22 @@ from .db import Database
 STAGE_DFN_MESH = "dfn_mesh"
 STAGE_CONVERT = "convert_to_geos"
 STAGE_GEOS_RUN = "run_geos"
+
+# Default location of the GEOS binary inside the geos docker image (the image
+# used by this project installs the build tree at /opt/geos).
+GEOS_IN_CONTAINER = "/opt/geos/bin/geosx"
+
+
+def _is_runnable_deck(path: Path) -> bool:
+    """True for a standalone GEOS deck (not a fragment included by another)."""
+    stem = path.stem.lower()
+    if stem.endswith("_base") or stem.endswith("-base"):
+        return False
+    try:
+        head = path.read_text(errors="ignore")[:8000]
+    except OSError:
+        return False
+    return re.search(r"<Problem[\s>]", head) is not None
 
 
 class JobRunner:
@@ -262,16 +279,35 @@ def stage_convert(config: Config, case: dict, case_dir: Path):
 def stage_geos_run(config: Config, case: dict, case_dir: Path):
     """Run GEOS on the generated input deck (searched anywhere in the case)."""
     geos = config["geos_exe"]
+    backend, image = config.resolve_backend("geos")
+    if backend == "docker":
+        image = config["geos_docker_image"]
+        if not image:
+            raise RuntimeError(
+                "GEOS backend is docker but no image is configured: set "
+                "'GEOS docker image' in Settings (e.g. dfn-geos:1.1)")
+        # The executable path inside the image; a host-style path (Windows
+        # drive letter, or one that does not exist in the container) would be
+        # wrong here, so use the default location unless an absolute POSIX
+        # path was given explicitly.
+        if not geos or not geos.startswith("/"):
+            geos = GEOS_IN_CONTAINER
     if not geos:
-        raise RuntimeError("GEOS executable is not configured (see Settings)")
+        raise RuntimeError(
+            "GEOS executable is not configured: set 'GEOS backend' = docker "
+            "plus an image, or give the path to the geosx binary (Settings)")
     candidates = [case_dir / "geos_case_edfm" / "geos_dfn_edfm.xml",
                   case_dir / "geos_case" / "geos_dfn_fractures.xml"]
     # EDFM first: it is the path proven end-to-end (the conformal deck needs a
     # fracture-split matrix, see report §6.3).  Anything the user uploaded is
-    # considered after the generated decks.
+    # considered after the generated decks, shallow files first, and XML
+    # fragments (`*_base.xml`, files that only <Included> others) are skipped.
     candidates += sorted(case_dir.rglob("geos_dfn_*.xml"))
-    candidates += sorted(case_dir.rglob("*.xml"))
-    xml = next((p for p in candidates if p.exists()), None)
+    candidates += sorted(
+        (p for p in case_dir.rglob("*.xml") if _is_runnable_deck(p)),
+        key=lambda p: (len(p.relative_to(case_dir).parts), str(p)))
+    xml = next((p for p in candidates
+                if p.exists() and _is_runnable_deck(p)), None)
     if xml is None:
         raise RuntimeError("No GEOS input deck found; run the conversion "
                            "stage first (or upload an XML + mesh)")

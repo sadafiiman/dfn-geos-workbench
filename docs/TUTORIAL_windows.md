@@ -187,8 +187,10 @@ only exists for Linux. On Windows you have two choices:
 
 * **WSL2 (easiest)** — install Ubuntu from the Microsoft Store, and follow
   `docs\INSTALL_ubuntu.md` inside it; run the panel from there too.
-* **Docker** — build a GEOS image once and set *GEOS backend* = `docker`.
-  Exact commands: `docs\INSTALL_windows.md`, section 5.
+* **Docker** — build a GEOS image once and set *GEOS backend* = `docker`,
+  *GEOS docker image* = `dfn-geos:1.1`, and leave *GEOS executable* empty
+  (the panel uses `/opt/geos/bin/geosx` inside the image).
+  Exact build commands: `docs\INSTALL_windows.md`, section 5.
 
 Both options need the **GEOS source** (only to compile it once) but **not**
 `thirdPartyLibs`: the `geosx/ubuntu24.04-gcc13` image already contains every

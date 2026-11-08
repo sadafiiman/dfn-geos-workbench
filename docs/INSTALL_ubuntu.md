@@ -130,9 +130,9 @@ Then in **Settings** set:
 
 | Field | Value |
 |---|---|
-| GEOS backend | `docker` |
+| GEOS backend | `docker` (or `auto`) |
 | GEOS docker image | `dfn-geos:1.1` |
-| GEOS executable | `/opt/geos/bin/geosx` (path *inside* the image) |
+| GEOS executable | leave empty — the panel uses `/opt/geos/bin/geosx` inside the image |
 
 Stage 3 now runs as your user, so results stay writable without `sudo`.
 Without a GEOS image the panel still performs stages 1–2 and delivers the

@@ -594,7 +594,7 @@ class Handler(BaseHTTPRequestHandler):
              c["dfnworks_backend"]),
             ("dfnworks_docker_image", "dfnWorks docker image",
              c["dfnworks_docker_image"]),
-            ("geos_backend", "GEOS backend (native|docker)", c["geos_backend"]),
+            ("geos_backend", "GEOS backend (auto|native|docker)", c["geos_backend"]),
             ("geos_docker_image", "GEOS docker image (optional)",
              c["geos_docker_image"]),
         ]

@@ -28,7 +28,7 @@ DEFAULTS = {
     # docker backend for dfnWorks (recommended on Windows)
     "dfnworks_docker_image": "ees16/dfnworks:latest",
     "dfnworks_backend": "auto",   # auto | native | docker
-    "geos_backend": "native",     # native | docker (geos image name below)
+    "geos_backend": "auto",       # auto | native | docker (image name below)
     "geos_docker_image": "",
     "panel_port": 8765,
 }
@@ -111,4 +111,8 @@ class Config:
                 native_ok = bool(self.detect_dfnworks() and self.detect_lagrit())
                 backend = "native" if native_ok else "docker"
             return backend, image
-        return self["geos_backend"], self["geos_docker_image"]
+        backend = (self["geos_backend"] or "auto").lower()
+        if backend == "auto":
+            backend = "native" if self["geos_exe"] else (
+                "docker" if self["geos_docker_image"] else "native")
+        return backend, self["geos_docker_image"]
