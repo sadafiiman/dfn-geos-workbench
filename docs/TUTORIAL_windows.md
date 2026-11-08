@@ -153,6 +153,14 @@ The panel recognises what you gave it and runs the right steps:
 A normal case takes **2–10 minutes**. The page shows each stage turning green;
 the **Log** button next to a stage shows the full output.
 
+The three stages, in one line each:
+
+| Stage | What it does | What it leaves behind |
+|---|---|---|
+| **1 · dfnWorks mesh** | builds the random fracture network and meshes it (dfnGen → LaGriT) | `output\full_mesh.inp`, `params.txt`, `polys\`, `dfm_mesh\` |
+| **2 · Convert → GEOS** | translates those meshes into GEOS input | `geos_case\` (`.vtm`, `.vtu`, conformal deck) and `geos_case_edfm\geos_dfn_edfm.xml` |
+| **3 · Run GEOS** | simulates flow in the rock + fractures (needs step 9) | `dfn_edfm.pvd` + one folder of `.vtu` per time step |
+
 > No input file yet? Use the example shipped with the project: open
 > `C:\dfn-project\dfn-geos-workbench\poc\output`, select the files, and zip
 > them — that is a real dfnWorks result you can convert immediately.
@@ -165,18 +173,36 @@ Open the case and click **⬇ Download results (.zip)**, then unzip it.
 
 ```
 geos_case\
-  case.vtm                  multi-block container GEOS reads
+  case.vtm                  conforming model: rock block + fracture surfaces
   main.vtu                  rock matrix (tetrahedra)
   fracture.vtu              explicit fracture surfaces (triangles + aperture)
   geos_dfn_fractures.xml    conformal GEOS input deck
 geos_case_edfm\
   geos_dfn_edfm.xml         EDFM GEOS input deck — this is the one to run
+dfn_edfm.pvd                the simulation time series (after step 9)
+dfn_edfm\0000N0\...         one folder per time step (matrix + fractures)
 output\                     dfnWorks files (generated or uploaded)
 ```
 
-Open the `.vtm` / `.vtu` files in **ParaView** (<https://paraview.org>) to see
-the fracture network inside the rock block: load the file, colour by
-`fracture_id` (fractures) or by `pressure` (simulation results).
+### Looking at the results in ParaView
+
+Install **ParaView** from <https://paraview.org> (free). Then:
+
+| To see | Open this file | Then |
+|---|---|---|
+| The simulation over time | `dfn_edfm.pvd` | **Apply**, press ▶ to animate t = 0 … 50 000 s |
+| Pressure in the rock | (tree) `matrix/Level0/RockMatrix` | colour by **`pressure`** |
+| The fracture network | (tree) `matrix/Level0/Fracture` | colour by `pressure` or `elementAperture`; use *Surface With Edges* to see the 2-D elements |
+| Just the geometry | `geos_case\case.vtm` | colour by `fracture_id` (fractures) or `attribute` (rock) |
+
+> Open the **`.pvd`**, not the individual `.vtu`: one `.vtu` is a single time
+> step of a single region.
+
+If the colour dropdown looks empty, toggle the Point/Cell-array button next to
+it — GEOS writes cell data.
+
+Everything here (and the full list of files, plus velocity and CSV output) is
+explained in **`docs\USER_GUIDE.md`, section 10**.
 
 ---
 
