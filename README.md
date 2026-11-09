@@ -42,8 +42,10 @@ dfn-geos-workbench/
 │                                    so pydfnworks runs with numpy only
 ├── tools/                         ← LaGriT binaries used during the study
 ├── run_panel.py                   ← panel entry point
+├── setup_windows.ps1 / .cmd       ← one-command Windows setup (clone/pull/config/start)
+├── start_windows.cmd              ← daily Windows launcher
 └── docs/
-    ├── TUTORIAL_windows.pdf      ← 3-page input→output walkthrough
+    ├── TUTORIAL_windows.pdf      ← illustrated input→output walkthrough
     ├── INSTALL_ubuntu.md          ← development platform
     └── INSTALL_windows.md         ← deployment platform
 ```
@@ -52,11 +54,11 @@ dfn-geos-workbench/
 
 ```bash
 # 1) panel (no dependencies beyond Python + numpy)
-#    Windows, complete from zero:
-#      git clone https://github.com/lanl/dfnWorks.git
-#      git clone https://github.com/sadafiiman/dfn-geos-workbench.git
-#      cd dfn-geos-workbench && python -m pip install numpy
-#      docker pull ees16/dfnworks:latest
+#    Windows, complete from zero (installs everything, starts the panel):
+#      git clone https://github.com/sadafiiman/dfn-geos-workbench.git C:\dfn-project\dfn-geos-workbench
+#      cd C:\dfn-project\dfn-geos-workbench
+#      setup_windows.cmd
+#      (add -WithGeos to also build the GEOS solver image; start_windows.cmd next time)
 #    then (every platform):
 python3 run_panel.py --port 8765        # open http://localhost:8765
 

@@ -1,6 +1,6 @@
 # Installation & operation — Windows
 
-> **New here?** Start with the 3-page
+> **New here?** Start with the short
 > [`TUTORIAL_windows.pdf`](TUTORIAL_windows.pdf) (input → results). This file
 > is the reference for every option below.
 
@@ -18,6 +18,34 @@ changes**. Two levels of support:
 
 ## 0. Fast path (from zero)
 
+With Git, Python 3.10+ and Docker Desktop already installed (section 1), one
+command sets everything up:
+
+```bat
+git clone https://github.com/sadafiiman/dfn-geos-workbench.git C:\dfn-project\dfn-geos-workbench
+cd C:\dfn-project\dfn-geos-workbench
+setup_windows.cmd
+```
+
+(or double-click `setup_windows.cmd` in Explorer if the folder is already
+there). The script checks the prerequisites, starts Docker Desktop if it is
+closed, clones dfnWorks next to itself, installs `numpy`, pulls the dfnWorks
+image, writes `config.json`, launches the panel and opens the browser.
+
+| Option | Effect |
+|---|---|
+| (none) | stages 1–2 ready (dfnWorks mesh + GEOS input decks) |
+| `-WithGeos` | also builds the `dfn-geos:1.1` solver image (~45–60 min, ~8 GB) |
+| `-NoStart` | set up only; launch later with `start_windows.cmd` |
+| `-Force` | overwrite an existing `config.json` |
+| `-Root D:\dfn` | use a different project folder (default `C:\dfn-project`) |
+| `-Port 9000` | use a different panel port (default 8765) |
+
+Everything after that happens in the panel: **Quick process** → drop a ZIP →
+**Process** → **Download results (.zip)**.
+
+Doing it by hand instead:
+
 ```bat
 mkdir C:\dfn-project
 cd C:\dfn-project
@@ -28,7 +56,6 @@ python -m pip install numpy
 docker pull ees16/dfnworks:latest
 python run_panel.py
 :: open http://localhost:8765 → Settings → backend "docker"
-:: → Quick process → drop a ZIP → Process → Download results (.zip)
 ```
 
 In **Settings** set *dfnWorks backend* = `docker`,
@@ -107,19 +134,23 @@ created inside the WSL filesystem, which is also much faster than `/mnt/c`.
 ### 5b. Native Windows panel + GEOS in a container
 
 The panel supports `geos_backend = docker`. You need an image that contains a
-built `geosx`:
+built `geosx`. `setup_windows.ps1 -WithGeos` does the whole thing; the
+equivalent by hand (the command set validated on Windows) is:
 
 ```bat
-:: 1. build once (adapt paths); this is the command pair that was validated
+:: 1. build once (adapt paths), inside the container for speed
 docker run -d --name geosbuild geosx/ubuntu24.04-gcc13:364-1112 sleep infinity
 docker cp GEOS geosbuild:/opt/GEOS
-docker exec geosbuild bash -lc "git config --global --add safe.directory '*' && cd /opt/GEOS && git submodule update --init --recursive && python3 scripts/config-build.py -hc /spack-generated.cmake -bt Release -bp /opt/geos-build -ip /opt/geos-install -DENABLE_HYPRE=ON -DENABLE_TRILINOS=OFF -DGEOS_LA_INTERFACE=Hypre -DENABLE_TESTS=OFF -DENABLE_EXAMPLES=OFF -DENABLE_BENCHMARKS=OFF -DDISABLE_UNIT_TESTS=ON"
-docker exec geosbuild bash -lc "cd /opt/geos-build && make -j4 geosx"
-docker commit geosbuild dfn-geos:1.1 && docker rm -f geosbuild
+docker exec geosbuild bash -lc "git config --global --add safe.directory '*' && cd /opt/GEOS && git submodule update --init --recursive && python3 scripts/config-build.py -hc /spack-generated.cmake -bt Release -bp /work/geos-build -ip /work/geos-install -DENABLE_HYPRE=ON -DENABLE_TRILINOS=OFF -DGEOS_LA_INTERFACE=Hypre -DENABLE_TESTS=OFF -DENABLE_EXAMPLES=OFF -DENABLE_BENCHMARKS=OFF -DDISABLE_UNIT_TESTS=ON"
+docker exec geosbuild bash -lc "cd /work/geos-build && make -j4 geosx"
+docker exec geosbuild bash -lc "rm -rf /opt/geos && mkdir -p /opt/geos && cp -a /work/geos-build/. /opt/geos/"
+docker commit -c "ENV LD_LIBRARY_PATH=/opt/geos/lib" geosbuild dfn-geos:1.1
+docker rm -f geosbuild
 ```
 
 Then in **Settings**: *GEOS backend* = `docker`, *GEOS docker image* =
-`dfn-geos:1.1`, *GEOS executable* = `/opt/geos-build/bin/geosx`.
+`dfn-geos:1.1`, and leave *GEOS executable* empty — the panel uses
+`/opt/geos/bin/geosx` inside the image.
 
 Notes from the reference build (Ubuntu 24.04, TPL tag `364-1112`):
 
@@ -129,7 +160,10 @@ Notes from the reference build (Ubuntu 24.04, TPL tag `364-1112`):
 * `-j4` is a safe default under Docker Desktop's default memory; give Docker
   12 GB+ and raise to `-j6` if you want it faster.
 * Expect 30–60 minutes. The resulting binary is
-  `/opt/geos-build/bin/geosx` (~324 KB launcher + shared libraries).
+  `/opt/geos/bin/geosx` (~324 KB launcher + shared libraries).
+* Build inside the container (`docker exec`), not on a `-v C:\...` bind mount:
+  reading/writing C: through Docker Desktop is several times slower and this
+  is a 3000-file C++ build.
 
 Without a GEOS binary you still get every model artifact (mesh + decks); only
 stage *3 · Run GEOS* is unavailable.

@@ -27,6 +27,34 @@ Plus two folders of code, downloaded in step 3.
 
 ---
 
+## Fast track — one command (skip to here if you like)
+
+Install the three programs in step 1, make sure Docker Desktop is running,
+then paste this into PowerShell:
+
+```powershell
+git clone https://github.com/sadafiiman/dfn-geos-workbench.git C:\dfn-project\dfn-geos-workbench
+cd C:\dfn-project\dfn-geos-workbench
+setup_windows.cmd
+```
+
+If you downloaded the folder instead of cloning it, just double-click
+`setup_windows.cmd` in Explorer.
+
+The script does the rest of this tutorial for you: it downloads dfnWorks,
+installs `numpy`, pulls the dfnWorks image, writes the settings (steps 3, 4
+and 6), then starts the panel and opens the browser (step 5). When it prints
+**Setup finished**, jump to step 7 — make a case.
+
+* Add `-WithGeos` to also build the GEOS solver image (step 9, ~45–60 min):
+  `powershell -ExecutionPolicy Bypass -File .\setup_windows.ps1 -WithGeos`
+* Next time, run `start_windows.cmd` (or `python run_panel.py`).
+
+If you prefer to see each step happen, ignore this box and continue with
+step 1.
+
+---
+
 ## Step 1 — Install the three programs
 
 1. **Git** — run the installer, keep every default, click *Next* to the end.
@@ -216,7 +244,15 @@ only exists for Linux. On Windows you have two choices:
 * **Docker** — build a GEOS image once and set *GEOS backend* = `docker`,
   *GEOS docker image* = `dfn-geos:1.1`, and leave *GEOS executable* empty
   (the panel uses `/opt/geos/bin/geosx` inside the image).
-  Exact build commands: `docs\INSTALL_windows.md`, section 5.
+  Easiest: run the setup script again with the extra switch, which builds and
+  packages the image for you:
+
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File .\setup_windows.ps1 -WithGeos
+  ```
+
+  It is safe to repeat: if `dfn-geos:1.1` already exists it is skipped.
+  The manual commands are in `docs\INSTALL_windows.md`, section 5.
 
 Both options need the **GEOS source** (only to compile it once) but **not**
 `thirdPartyLibs`: the `geosx/ubuntu24.04-gcc13` image already contains every
@@ -230,6 +266,13 @@ configured"* — that is expected and harmless: the mesh and decks are complete.
 ## Step 10 — Next time you use it
 
 Only two steps are needed after a restart:
+
+```powershell
+cd C:\dfn-project\dfn-geos-workbench
+start_windows.cmd
+```
+
+…or, the same thing by hand:
 
 ```powershell
 cd C:\dfn-project\dfn-geos-workbench
