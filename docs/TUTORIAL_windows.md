@@ -252,7 +252,7 @@ python run_panel.py
 | Browser shows gibberish / binary instead of the panel | You are on a port owned by another program — start with `--port 9000` and open that |
 | Stage 1: *no intersecting fractures* | Make fractures larger, or lower *Mesh h* |
 | Stage 1: `MO DOES NOT EXIST: mo_poisson_pts` | Old LaGriT found — keep *dfnWorks backend* = `docker` |
-| Stage 3: *GEOS executable is not configured* | Expected without step 9 |
+| Stage 3: *GEOS executable is not configured* | Expected without step 9 — and the image must be built first (`docker images` must list it). Without a solver you still get the mesh + decks |
 | Case looks stuck at 0 % | Open **Log**; the first run pulls the image and can take minutes |
 | Opening `dfn_edfm.pvd` shows **only XML text** | That is normal — it is data, not a picture. Open it in **ParaView** (step 8) |
 | Files owned by `root` on Linux/WSL | `docker run --rm -v "$PWD":/w ees16/dfnworks:latest chown -R 1000:1000 /w` |

@@ -606,6 +606,19 @@ class Handler(BaseHTTPRequestHandler):
             f"<label>{R.esc(label)}"
             f"<input name=\"{name}\" value=\"{R.esc(value)}\"></label>"
             for name, label, value in fields)
+        backend, image = c.resolve_backend("geos")
+        if backend == "docker" and not image:
+            solver = ("<span class=\"warn\">⚠ not configured — stage 3 (Run GEOS) "
+                      "will refuse. Set a GEOS docker image, or ignore it if you "
+                      "only need the mesh and the decks.</span>")
+        elif backend == "docker":
+            solver = (f"✅ docker image <code>{R.esc(image)}</code> "
+                      "(binary <code>/opt/geos/bin/geosx</code> inside it)")
+        elif c["geos_exe"]:
+            solver = f"✅ native binary <code>{R.esc(c['geos_exe'])}</code>"
+        else:
+            solver = ("<span class=\"warn\">⚠ not configured — stage 3 (Run GEOS) "
+                      "will refuse.</span>")
         body = f"""
         <div class="card narrow"><h2>Settings</h2>
         <form method="post" action="/settings" class="stack">
@@ -617,6 +630,7 @@ class Handler(BaseHTTPRequestHandler):
             (recommended; disable if your env has full dependencies)</label>
           <button class="btn primary">Save</button>
         </form>
+        <p class="muted"><strong>GEOS solver:</strong> {solver}</p>
         <p class="muted">Settings are stored in <code>{R.esc(c.path)}</code>.</p></div>
         """
         self._html(200, "Settings", body, active="settings")

@@ -330,7 +330,7 @@ detects `*.xml` and runs stage 3 on the runnable deck. Decks that only
 | *"no intersecting fractures"* in the log | FRAM rejected all intersections: enlarge fractures / raise overlap, lower `h`, or use the default families |
 | Stage 1 fails with `MO DOES NOT EXIST: mo_poisson_pts` | You are using a released LaGriT binary; use the docker backend or a LaGriT built from source (see `docs/INSTALL_ubuntu.md`) |
 | Stage 1 fails with `Missing percent of mesh is larger than tolerance` | The conforming DFM mesh lost sliver triangles; the panel already passes `allowed_percentage=5` — for very dense networks refine `h` |
-| Stage 3 fails: *"GEOS executable is not configured"* | Set *GEOS backend* = `docker` + *GEOS docker image*, or point *GEOS executable* at a binary |
+| Stage 3 fails: *"GEOS executable is not configured"* | Set *GEOS backend* = `docker` + *GEOS docker image*, or point *GEOS executable* at a binary. The image must already exist (`docker images`) — build it once; if you only need the mesh and the decks, ignore this stage |
 | GEOS deck fails with *"this FieldSpecification targets (an) empty set(s)"* | A source/sink box in your own deck captures no cells; align it with the mesh cell centres |
 | Output files owned by `root` after a docker job | Should not happen (the panel runs GEOS as your user and restores ownership); if it does, `docker run --rm --entrypoint chown -v "$PWD":/w ees16/dfnworks:latest -R $(id -u):$(id -g) /w` |
 | `docker: permission denied` | Add your user to the `docker` group and re-login, or run the panel with sufficient rights |

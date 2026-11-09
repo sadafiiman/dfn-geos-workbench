@@ -105,3 +105,5 @@ label.chk input { width: auto; }
 .badge-done { color: var(--ok); border-color: var(--ok); }
 .badge-failed { color: var(--bad); border-color: var(--bad); }
 .badge-queued { color: var(--muted); }
+
+.warn { color: #a4510b; font-weight: 600; }
