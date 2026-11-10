@@ -265,7 +265,13 @@ class Handler(BaseHTTPRequestHandler):
         job_rows = "".join(R.job_row(j) for j in jobs)
         dw = panel.config["dfnworks_path"] or "(not configured)"
         lg = panel.config["lagrit_exe"] or "(not configured)"
-        geos = panel.config["geos_exe"] or "(not configured)"
+        g_backend, g_image = panel.config.resolve_backend("geos")
+        if g_backend == "docker" and g_image:
+            geos = f"docker · {g_image}"
+        elif g_backend == "native" and panel.config["geos_exe"]:
+            geos = panel.config["geos_exe"]
+        else:
+            geos = "(not configured)"
         body = f"""
         <div class="cards">
           <div class="card"><h3>dfnWorks</h3><code>{R.esc(dw)}</code></div>
@@ -275,8 +281,9 @@ class Handler(BaseHTTPRequestHandler):
         <div class="card quick-cta">
           <div>
             <h2>Quick process</h2>
-            <p class="muted">Upload a ZIP of dfnWorks files (or outputs) and get
-            the GEOS case back as a single ZIP — no configuration needed.</p>
+            <p class="muted">Upload one GEOS XML deck, a ZIP of dfnWorks
+            files/outputs, or loose files and get the GEOS case back as a
+            single ZIP — no configuration needed.</p>
           </div>
           <a class="btn primary" href="/quick">Upload &amp; process →</a>
         </div>
@@ -432,31 +439,46 @@ class Handler(BaseHTTPRequestHandler):
 
     def page_quick(self):
         panel = self.panel
-        geos_ok = bool(panel.config["geos_exe"])
+        geos_ok = panel.config.geos_ready()
+        if not geos_ok:
+            geos_note = "no (stage 3 will be skipped — set it up in Settings)"
+        else:
+            backend, image = panel.config.resolve_backend("geos")
+            if backend == "docker":
+                geos_note = ("yes (docker image <code>%s</code>)"
+                             % R.esc(image))
+            else:
+                geos_note = ("yes (native binary <code>%s</code>)"
+                             % R.esc(panel.config["geos_exe"]))
         body = f"""
         <div class="card narrow">
         <h2>Quick process</h2>
-        <p class="muted">Drop a <b>ZIP</b> of your dfnWorks files (or the raw
-        output files) and press <b>Process</b>. The panel inspects the contents
-        and runs the right stage(s) automatically, then lets you download the
-        results as one ZIP.</p>
+        <p class="muted">Drop a <b>ZIP</b> of your dfnWorks files, a single
+        <b>GEOS XML deck</b>, or individual files and press <b>Process</b>.
+        The panel inspects the contents and runs the right stage(s)
+        automatically, then lets you download the results as one ZIP.</p>
         <form method="post" action="/quick" enctype="multipart/form-data" class="stack">
           <label>Name (optional — derived from the file name otherwise)
             <input name="name" placeholder="my_network"></label>
-          <label>ZIP file or loose files
+          <label>ZIP, one XML deck, or loose files
             <input type="file" name="files" multiple required></label>
           <label>What to do
             <select name="action">
               <option value="auto" selected>Auto-detect (recommended)</option>
               <option value="full">Run full pipeline (dfnWorks → convert → GEOS)</option>
               <option value="convert">Convert only (dfnWorks outputs → GEOS case)</option>
-              <option value="geos">Run GEOS only (XML + mesh uploaded)</option>
+              <option value="geos">Run GEOS only (one XML deck, + mesh if it needs one)</option>
             </select></label>
+          <p class="muted">A single XML is enough when the deck is
+             self-contained — the EDFM deck (<code>geos_dfn_edfm.xml</code>)
+             builds its own matrix mesh, so it needs no other files. Decks that
+             point at a <code>.vtm</code>/<code>.vtu</code> need those files
+             uploaded with them.</p>
           <p class="muted">Recognised: <code>full_mesh.inp</code>,
              <code>params.txt</code>, <code>polys/</code>,
              <code>dfm_mesh/dfm_tet_mesh.inp</code>, <code>dfn_driver.py</code>,
              GEOS <code>*.xml</code>/<code>*.vtm</code>/<code>*.vtu</code>.
-             GEOS executable configured: <b>{"yes" if geos_ok else "no"}</b>{"" if geos_ok else " (stage 3 will be skipped)"}.</p>
+             GEOS solver: <b>{geos_note}</b>.</p>
           <button class="btn primary">Process</button>
         </form>
         <p class="muted">Prefer manual control? Use <a href="/case/new">New case</a>
@@ -535,24 +557,28 @@ class Handler(BaseHTTPRequestHandler):
                                   p.stat().st_size if p.is_file() else 0)
 
         # decide pipeline
-        info = ingest.detect_action(written, bool(panel.config["geos_exe"]))
+        geos_ok = panel.config.geos_ready()
+        info = ingest.detect_action(written, geos_ok, case_dir)
         action = action_field if action_field != "auto" else info["action"]
         chain_map = {
             "full": ["dfn_mesh", "convert_to_geos"]
-                    + (["run_geos"] if panel.config["geos_exe"] else []),
+                    + (["run_geos"] if geos_ok else []),
             "convert": ["convert_to_geos"],
             "geos": ["run_geos"],
         }
         chain = chain_map.get(action, info["chain"])
+        params = {"source": "quick", "action": action, "detected": info,
+                  "files": written[:50]}
+        if info.get("deck"):
+            params["deck"] = info["deck"]
+        # persist first: the job thread reads the case row as soon as it starts
+        panel.db.update_case(case_id, params=params)
         if chain:
             panel.runner.submit(case_id, chain[0],
                                 details={"quick": True,
                                          "detected": info,
                                          "action": action},
                                 chain=chain[1:])
-        panel.db.update_case(case_id, params={
-            "source": "quick", "action": action, "detected": info,
-            "files": written[:50]})
         self._redirect(f"/case/{case_id}")
 
     def download_zip(self, case_id: int):
@@ -591,7 +617,8 @@ class Handler(BaseHTTPRequestHandler):
         fields = [
             ("dfnworks_path", "dfnWorks repository", c["dfnworks_path"]),
             ("lagrit_exe", "LaGriT executable", c["lagrit_exe"]),
-            ("geos_exe", "GEOS executable", c["geos_exe"]),
+            ("geos_exe", "GEOS executable (native backend only; blank = docker)",
+             c["geos_exe"]),
             ("python_exe", "Python for dfnWorks (blank = panel python)",
              c["python_exe"]),
             ("dfnworks_backend", "dfnWorks backend (auto|native|docker)",
@@ -599,7 +626,8 @@ class Handler(BaseHTTPRequestHandler):
             ("dfnworks_docker_image", "dfnWorks docker image",
              c["dfnworks_docker_image"]),
             ("geos_backend", "GEOS backend (auto|native|docker)", c["geos_backend"]),
-            ("geos_docker_image", "GEOS docker image (optional)",
+            ("geos_docker_image",
+             "GEOS docker image (blank = auto-detect dfn-geos:1.1)",
              c["geos_docker_image"]),
         ]
         inputs = "".join(
@@ -607,18 +635,21 @@ class Handler(BaseHTTPRequestHandler):
             f"<input name=\"{name}\" value=\"{R.esc(value)}\"></label>"
             for name, label, value in fields)
         backend, image = c.resolve_backend("geos")
-        if backend == "docker" and not image:
-            solver = ("<span class=\"warn\">⚠ not configured — stage 3 (Run GEOS) "
-                      "will refuse. Set a GEOS docker image, or ignore it if you "
-                      "only need the mesh and the decks.</span>")
-        elif backend == "docker":
+        detected = c.detect_geos_image()
+        if backend == "docker" and image:
             solver = (f"✅ docker image <code>{R.esc(image)}</code> "
                       "(binary <code>/opt/geos/bin/geosx</code> inside it)")
-        elif c["geos_exe"]:
+            if not c["geos_docker_image"]:
+                solver += (" — detected locally; you can leave the image field "
+                           "blank.")
+        elif backend == "native" and c["geos_exe"]:
             solver = f"✅ native binary <code>{R.esc(c['geos_exe'])}</code>"
         else:
             solver = ("<span class=\"warn\">⚠ not configured — stage 3 (Run GEOS) "
                       "will refuse.</span>")
+            if detected:
+                solver += (f" A GEOS image (<code>{R.esc(detected)}</code>) "
+                           "exists; set 'GEOS backend' to docker to use it.")
         body = f"""
         <div class="card narrow"><h2>Settings</h2>
         <form method="post" action="/settings" class="stack">
@@ -705,6 +736,7 @@ class Handler(BaseHTTPRequestHandler):
         boundary = m.group(1).encode()
         body = self._body()
         saved = 0
+        uploaded: list[str] = []
         for part in body.split(b"--" + boundary):
             part = part.strip(b"\r\n")
             if not part or part == b"--":
@@ -733,7 +765,17 @@ class Handler(BaseHTTPRequestHandler):
             target_dir.mkdir(parents=True, exist_ok=True)
             (target_dir / filename).write_bytes(data)
             panel.db.add_artifact(case_id, "input", rel, len(data))
+            uploaded.append(rel)
             saved += 1
+        # a deck uploaded by hand becomes the case's default GEOS deck
+        if uploaded:
+            from . import ingest
+            case_dir = panel.case_dir(case)
+            deck = ingest.pick_deck(uploaded, case_dir)
+            if deck and ingest.is_runnable_deck(case_dir / deck):
+                params = dict(case.get("params") or {})
+                params["deck"] = deck
+                panel.db.update_case(case_id, params=params)
         self._redirect(f"/case/{case_id}")
 
     _pending_subdir = ""

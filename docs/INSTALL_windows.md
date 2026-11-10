@@ -149,8 +149,9 @@ docker rm -f geosbuild
 ```
 
 Then in **Settings**: *GEOS backend* = `docker`, *GEOS docker image* =
-`dfn-geos:1.1`, and leave *GEOS executable* empty — the panel uses
-`/opt/geos/bin/geosx` inside the image.
+`dfn-geos:1.1` (or leave it blank — the panel detects the local image), and
+leave *GEOS executable* empty — the panel uses `/opt/geos/bin/geosx` inside
+the image.
 
 Notes from the reference build (Ubuntu 24.04, TPL tag `364-1112`):
 

@@ -62,10 +62,10 @@ dfn-geos-workbench/
 #    then (every platform):
 python3 run_panel.py --port 8765        # open http://localhost:8765
 
-# Simplest workflow - ZIP in, ZIP out:
-#   open the panel -> "Quick process" -> drop a zip of your dfnWorks files
-#   (or existing outputs) -> Process -> "Download results (.zip)".
-#   The panel auto-detects what to run (see docs/USER_GUIDE.md).
+# Simplest workflow - upload in, ZIP out:
+#   open the panel -> "Quick process" -> drop a single GEOS XML deck, a zip of
+#   dfnWorks files/outputs, or a few loose files -> Process -> "Download
+#   results (.zip)". The panel auto-detects what to run (docs/USER_GUIDE.md).
 
 # 2) proof of concept (CLI variant)
 cd poc
@@ -83,8 +83,8 @@ geosx -i ../poc/geos_case_edfm/geos_dfn_edfm.xml   # EDFM deck (runs today)
 
 The panel drives the same three stages with one click; stage 1 runs natively
 or inside the official `ees16/dfnworks` docker image (recommended), stage 2
-always runs locally (numpy only), stage 3 needs a GEOS executable (configure
-in *Settings*).
+always runs locally (numpy only), stage 3 needs a GEOS solver — a compiled
+binary or a `dfn-geos` docker image (detected automatically) in *Settings*.
 
 ## Key results of the feasibility study
 

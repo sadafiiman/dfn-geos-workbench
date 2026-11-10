@@ -10,11 +10,20 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import subprocess
+import time
 from pathlib import Path
 
 PKG_DIR = Path(__file__).resolve().parent
 DEFAULT_HOME = Path(os.environ.get("DFN_GEOS_PANEL_HOME",
                                    PKG_DIR.parent)).resolve()
+
+# Images produced by setup_windows.ps1 -WithGeos (and other builds of this
+# project).  Used to offer a sensible default when no image is configured.
+GEOS_IMAGE_PREFERENCE = ("dfn-geos:1.1", "dfn-geos:latest")
+_GEOS_IMAGE_TTL = 20.0          # seconds; probing docker on every page is slow
+_geos_image_cache: dict[str, tuple[float, str]] = {}
 
 DEFAULTS = {
     # discovery roots (repos cloned next to the panel, by default)
@@ -111,8 +120,54 @@ class Config:
                 native_ok = bool(self.detect_dfnworks() and self.detect_lagrit())
                 backend = "native" if native_ok else "docker"
             return backend, image
-        backend = (self["geos_backend"] or "auto").lower()
-        if backend == "auto":
-            backend = "native" if self["geos_exe"] else (
-                "docker" if self["geos_docker_image"] else "native")
-        return backend, self["geos_docker_image"]
+        backend = (self["geos_backend"] or "auto").strip().lower()
+        image = (self["geos_docker_image"] or "").strip()
+        if backend == "native":
+            return backend, image
+        if backend == "docker":
+            # An image built locally (setup_windows.ps1 -WithGeos) is enough;
+            # the user does not have to type its name into Settings.
+            return backend, image or self.detect_geos_image()
+        # auto: prefer a native binary, then any usable docker image
+        if self["geos_exe"]:
+            return "native", image
+        image = image or self.detect_geos_image()
+        return ("docker" if image else "native"), image
+
+    def detect_geos_image(self) -> str:
+        """Name of a locally available GEOS image ('' when there is none).
+
+        The result is cached briefly: the panel calls this on every page
+        render, and ``docker image ls`` takes a few hundred milliseconds.
+        """
+        now = time.monotonic()
+        hit = _geos_image_cache.get("geos")
+        if hit and now - hit[0] < _GEOS_IMAGE_TTL:
+            return hit[1]
+        image = ""
+        if shutil.which("docker"):
+            try:
+                proc = subprocess.run(
+                    ["docker", "image", "ls", "--format",
+                     "{{.Repository}}:{{.Tag}}"],
+                    capture_output=True, text=True, timeout=5)
+                tags = [ln.strip() for ln in proc.stdout.splitlines()
+                        if ln.strip()]
+                for want in GEOS_IMAGE_PREFERENCE:
+                    if want in tags:
+                        image = want
+                        break
+                else:
+                    image = next((t for t in tags
+                                  if t.startswith("dfn-geos:")), "")
+            except (OSError, subprocess.SubprocessError):
+                image = ""
+        _geos_image_cache["geos"] = (now, image)
+        return image
+
+    def geos_ready(self) -> bool:
+        """True when the Run-GEOS stage has a solver it can actually start."""
+        backend, image = self.resolve_backend("geos")
+        if backend == "docker":
+            return bool(image)
+        return bool(self["geos_exe"])

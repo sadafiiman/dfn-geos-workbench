@@ -258,8 +258,10 @@ Both options need the **GEOS source** (only to compile it once) but **not**
 `thirdPartyLibs`: the `geosx/ubuntu24.04-gcc13` image already contains every
 third-party library.
 
-Without it, stage *3 · Run GEOS* fails fast with *"GEOS executable is not
-configured"* — that is expected and harmless: the mesh and decks are complete.
+Without it, stage *3 · Run GEOS* fails fast with *"GEOS is not configured"*
+— that is expected and harmless: the mesh and decks are complete. A locally
+built `dfn-geos` image is detected automatically, so you can leave the image
+field blank.
 
 ---
 

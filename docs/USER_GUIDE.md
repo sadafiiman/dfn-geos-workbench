@@ -32,12 +32,17 @@ files, output files and job history, and offers a three-stage pipeline:
 If you just want to feed files in and get results out, skip the manual steps
 below and use **Quick process** in the top bar:
 
-1. **Pack your files.** Zip up whatever you have — e.g. a dfnWorks output
-   folder (`full_mesh.inp`, `params.txt`, `polys/`, and optionally
-   `dfm_mesh/`), your own driver/inputs, or a GEOS XML + mesh. A zip whose
-   contents sit inside one top-level folder is fine (the folder is stripped).
-   Loose files (no zip) also work: dfnWorks-like files are placed in
-   `output/` automatically.
+1. **Pack your files — or don't.** You can upload:
+   - a single **GEOS XML deck** (best if the deck is self-contained, e.g. the
+     EDFM `geos_dfn_edfm.xml` this panel generates — it builds its own matrix
+     mesh, so nothing else is needed);
+   - a **ZIP** of a dfnWorks output folder (`full_mesh.inp`, `params.txt`,
+     `polys/`, optionally `dfm_mesh/`), your own driver/inputs, or a GEOS
+     XML + mesh files;
+   - just a few **loose files** (dfnWorks-like files are placed in `output/`
+     automatically).
+   A zip whose contents sit inside one top-level folder is fine (the folder is
+   stripped).
 2. **Open Quick process** → optionally give a name → choose
    *Auto-detect* (default) → **Process**.
 3. The panel inspects the upload and **runs the right stage(s) by itself**:
@@ -45,8 +50,8 @@ below and use **Quick process** in the top bar:
    | Found in the upload | Pipeline run |
    |---|---|
    | `full_mesh.inp` / `params.txt` / `polys/` / `dfm_mesh/…` | **convert** → GEOS case + XML deck(s) |
+   | a runnable GEOS `*.xml` (with or without mesh files) | **run GEOS** on that exact deck |
    | `dfn_driver.py` / `input_generator.dat` / `case_params.json` | **dfnWorks mesh → convert** (→ GEOS if configured) |
-   | `*.xml` + `*.vtm`/`*.vtu`/`*.vtp` | **run GEOS** |
    | nothing recognised | full pipeline |
 
    Stages run **chained**: when one finishes successfully the next starts
@@ -58,8 +63,8 @@ below and use **Quick process** in the top bar:
    (`geos_case_edfm/geos_dfn_edfm.xml`, the runnable one), plus the GEOS
    results (`*.pvd` + per-step `*.vtu`) when stage 3 ran.
 
-That's the whole loop: **ZIP in → ZIP out**. Everything below is the manual
-route when you want to control parameters or inspect each stage.
+That's the whole loop: **one deck (or one ZIP) in → ZIP out**. Everything below
+is the manual route when you want to control parameters or inspect each stage.
 
 ---
 
@@ -85,11 +90,15 @@ results (.zip)**, **delete**.
 
 ### 1.2 Quick process page
 
-One form: *name* (optional), a file/zip drop area, an *action* selector
-(*Auto-detect* is the default; *Convert only*, *Generate + convert*,
-*Run GEOS* force a specific path) and a **Process** button. Submitting
-creates the case, extracts the upload and starts the chained jobs. You land
-directly on the new case page.
+One form: *name* (optional), a file drop area (a single XML deck, a ZIP, or
+several loose files), an *action* selector (*Auto-detect* is the default;
+*Convert only*, *Full pipeline*, *Run GEOS only* force a specific path) and a
+**Process** button. Submitting creates the case, extracts the upload and starts
+the chained jobs. You land directly on the new case page.
+
+A single self-contained deck is a supported upload: drop `geos_dfn_edfm.xml`
+(or any deck that generates its own mesh) and the panel runs GEOS straight
+away — no zip, no other files.
 
 ### 1.3 New case page
 
@@ -167,16 +176,18 @@ Click **Settings** in the top bar and fill in:
 | Python for dfnWorks | leave blank to use the panel's Python | *(blank)* |
 | dfnWorks backend | `auto`, `native` or `docker` | `docker` |
 | dfnWorks docker image | image used for the docker backend | `ees16/dfnworks:latest` |
-| GEOS backend | `auto`, `native` or `docker` | `docker` |
-| GEOS docker image | image containing `geosx` | `dfn-geos:1.1` |
+| GEOS backend | `auto`, `native` or `docker` | `auto` |
+| GEOS docker image | image containing `geosx`; **blank = auto-detect** a locally built `dfn-geos:*` image | `dfn-geos:1.1` |
 | *Prepend compat/vendor* | keep checked unless your Python has the full pydfnworks dependencies | ✓ |
 
 Click **Save**. The dashboard then shows the resolved paths.
 
 **How `auto` decides.** `auto` uses a configured binary if one is set,
-otherwise a configured docker image, otherwise native. So with the docker
-backend you never need a GEOS executable on the host — the panel runs
-`/opt/geos/bin/geosx` inside the image.
+otherwise a docker image — the one named in Settings, or any `dfn-geos:*`
+image that already exists locally. So after `setup_windows.ps1 -WithGeos`
+you can leave *GEOS docker image* empty and the panel still finds
+`dfn-geos:1.1`; it runs `/opt/geos/bin/geosx` inside it and never needs a
+GEOS executable on the host.
 
 > **Tip (recommended on any OS):** `docker pull ees16/dfnworks:latest` and set
 > *dfnWorks backend* = `docker`. Stage 1 then needs no native LaGriT build
@@ -266,8 +277,8 @@ On the case page, click the three buttons in order. Each click creates a
 | **Produces** | a time series — `<name>.pvd` + `<name>/0000N0/matrix/Level0/{RockMatrix,Fracture}/rank_0.vtu` — with `pressure` and derived fields |
 | **Time** | ~10 s for a small network; minutes for dense ones |
 | **Verify** | job row **done**, return code 0; the Artifacts table lists the `.pvd` and several `.vtu`; each log line shows `Linear Solver | Success | Iterations: n` |
-| **Deck choice** | the panel prefers `geos_case_edfm/geos_dfn_edfm.xml` (proven end-to-end), then the conformal deck, then any runnable `*.xml` in the case |
-| **If it fails** | *"GEOS executable is not configured"* → set the GEOS backend (§3). The model artifacts from stage 2 are complete and unaffected |
+| **Deck choice** | the deck you uploaded (if any), then `geos_case_edfm/geos_dfn_edfm.xml` (proven end-to-end), then the conformal deck, then any runnable `*.xml` in the case |
+| **If it fails** | *"GEOS is not configured"* → set the GEOS backend (§3) or build `dfn-geos:1.1`; a local image is detected automatically. If the deck needs mesh files you did not upload, the log names them. The model artifacts from stage 2 are complete and unaffected |
 
 ### Watching a job
 
@@ -330,7 +341,8 @@ detects `*.xml` and runs stage 3 on the runnable deck. Decks that only
 | *"no intersecting fractures"* in the log | FRAM rejected all intersections: enlarge fractures / raise overlap, lower `h`, or use the default families |
 | Stage 1 fails with `MO DOES NOT EXIST: mo_poisson_pts` | You are using a released LaGriT binary; use the docker backend or a LaGriT built from source (see `docs/INSTALL_ubuntu.md`) |
 | Stage 1 fails with `Missing percent of mesh is larger than tolerance` | The conforming DFM mesh lost sliver triangles; the panel already passes `allowed_percentage=5` — for very dense networks refine `h` |
-| Stage 3 fails: *"GEOS executable is not configured"* | Set *GEOS backend* = `docker` + *GEOS docker image*, or point *GEOS executable* at a binary. The image must already exist (`docker images`) — build it once; if you only need the mesh and the decks, ignore this stage |
+| Stage 3 fails: *"GEOS is not configured"* | Set *GEOS backend* = `docker` (leave the image blank — a local `dfn-geos:*` image is auto-detected), or point *GEOS executable* at a binary. Build the image once; if you only need the mesh and the decks, ignore this stage |
+| Stage 3 fails: *"uses mesh files that are not in this case"* | Upload the named `.vtm`/`.vtu` files with the XML, or use a self-contained deck such as `geos_dfn_edfm.xml` |
 | GEOS deck fails with *"this FieldSpecification targets (an) empty set(s)"* | A source/sink box in your own deck captures no cells; align it with the mesh cell centres |
 | Output files owned by `root` after a docker job | Should not happen (the panel runs GEOS as your user and restores ownership); if it does, `docker run --rm --entrypoint chown -v "$PWD":/w ees16/dfnworks:latest -R $(id -u):$(id -g) /w` |
 | `docker: permission denied` | Add your user to the `docker` group and re-login, or run the panel with sufficient rights |

@@ -14,6 +14,7 @@ from pathlib import Path
 
 from .config import Config
 from .db import Database
+from .ingest import is_runnable_deck
 
 # stage names
 STAGE_DFN_MESH = "dfn_mesh"
@@ -24,17 +25,10 @@ STAGE_GEOS_RUN = "run_geos"
 # used by this project installs the build tree at /opt/geos).
 GEOS_IN_CONTAINER = "/opt/geos/bin/geosx"
 
-
-def _is_runnable_deck(path: Path) -> bool:
-    """True for a standalone GEOS deck (not a fragment included by another)."""
-    stem = path.stem.lower()
-    if stem.endswith("_base") or stem.endswith("-base"):
-        return False
-    try:
-        head = path.read_text(errors="ignore")[:8000]
-    except OSError:
-        return False
-    return re.search(r"<Problem[\s>]", head) is not None
+# Mesh files a deck points at (<VTKMesh file="..."/>, similar tags).
+_MESH_REF_RE = re.compile(
+    r"<(?:VTK|Exodus|PAMELA|Internal|Sunrise|Embedded|Collocated\w*)Mesh\b"
+    r"[^>]*?\bfile=\"([^\"]+)\"", re.S)
 
 
 class JobRunner:
@@ -190,9 +184,12 @@ class JobRunner:
     def _dockerize(self, argv: list[str], env: dict, case_dir: Path,
                    stage: str) -> tuple[list[str], dict]:
         """Wrap a native command into a docker run invocation."""
-        image = (self.config["dfnworks_docker_image"]
-                 if stage in (STAGE_DFN_MESH, STAGE_CONVERT)
-                 else self.config["geos_docker_image"])
+        if stage in (STAGE_DFN_MESH, STAGE_CONVERT):
+            image = self.config["dfnworks_docker_image"]
+        else:
+            # use the resolved image so a locally built dfn-geos image works
+            # even when Settings leaves the image name blank
+            _backend, image = self.config.resolve_backend("geos")
         workdir = "/app"
         inner = argv[:]
         # container python for dfnWorks stages
@@ -276,26 +273,14 @@ def stage_convert(config: Config, case: dict, case_dir: Path):
     return commands, _base_env(config), case_dir, False
 
 
-def stage_geos_run(config: Config, case: dict, case_dir: Path):
-    """Run GEOS on the generated input deck (searched anywhere in the case)."""
-    geos = config["geos_exe"]
-    backend, image = config.resolve_backend("geos")
-    if backend == "docker":
-        image = config["geos_docker_image"]
-        if not image:
-            raise RuntimeError(
-                "GEOS backend is docker but no image is configured: set "
-                "'GEOS docker image' in Settings (e.g. dfn-geos:1.1)")
-        # The executable path inside the image; a host-style path (Windows
-        # drive letter, or one that does not exist in the container) would be
-        # wrong here, so use the default location unless an absolute POSIX
-        # path was given explicitly.
-        if not geos or not geos.startswith("/"):
-            geos = GEOS_IN_CONTAINER
-    if not geos:
-        raise RuntimeError(
-            "GEOS executable is not configured: set 'GEOS backend' = docker "
-            "plus an image, or give the path to the geosx binary (Settings)")
+def _resolve_deck(case: dict, case_dir: Path) -> Path | None:
+    """The deck this case should run: uploaded one first, then generated."""
+    params = case.get("params") or {}
+    deck = str(params.get("deck") or "").strip()
+    if deck:
+        p = case_dir / deck
+        if p.is_file():
+            return p
     candidates = [case_dir / "geos_case_edfm" / "geos_dfn_edfm.xml",
                   case_dir / "geos_case" / "geos_dfn_fractures.xml"]
     # EDFM first: it is the path proven end-to-end (the conformal deck needs a
@@ -304,13 +289,63 @@ def stage_geos_run(config: Config, case: dict, case_dir: Path):
     # fragments (`*_base.xml`, files that only <Included> others) are skipped.
     candidates += sorted(case_dir.rglob("geos_dfn_*.xml"))
     candidates += sorted(
-        (p for p in case_dir.rglob("*.xml") if _is_runnable_deck(p)),
+        (p for p in case_dir.rglob("*.xml") if is_runnable_deck(p)),
         key=lambda p: (len(p.relative_to(case_dir).parts), str(p)))
-    xml = next((p for p in candidates
-                if p.exists() and _is_runnable_deck(p)), None)
+    return next((p for p in candidates
+                 if p.exists() and is_runnable_deck(p)), None)
+
+
+def _missing_mesh_files(xml: Path, case_dir: Path) -> list[str]:
+    """Relative mesh files a deck points at that are not in the case."""
+    try:
+        text = xml.read_text(errors="ignore")
+    except OSError:
+        return []
+    missing = []
+    for ref in _MESH_REF_RE.findall(text):
+        ref = ref.strip()
+        if not ref or ref.startswith(("/", "\\")) or "://" in ref:
+            continue          # absolute container path or remote URL
+        if (xml.parent / ref).is_file() or (case_dir / ref).is_file():
+            continue
+        missing.append(ref)
+    return sorted(set(missing))
+
+
+def stage_geos_run(config: Config, case: dict, case_dir: Path):
+    """Run GEOS on the generated or uploaded input deck."""
+    geos = (config["geos_exe"] or "").strip()
+    backend, image = config.resolve_backend("geos")
+    if backend == "docker":
+        if not image:
+            raise RuntimeError(
+                "GEOS is set to run in Docker, but no image is configured. "
+                "Build one once with 'setup_windows.ps1 -WithGeos' (or "
+                "'docker build' on Linux), then set Settings -> 'GEOS docker "
+                "image' to dfn-geos:1.1 -- or switch 'GEOS backend' to auto.")
+        # The executable path inside the image; a host-style path (Windows
+        # drive letter, or one that does not exist in the container) would be
+        # wrong here, so use the default location unless an absolute POSIX
+        # path was given explicitly.
+        if not geos or not geos.startswith("/"):
+            geos = GEOS_IN_CONTAINER
+    if not geos:
+        raise RuntimeError(
+            "GEOS is not configured, so the deck cannot be run. Either set "
+            "Settings -> 'GEOS backend' = docker (an image such as "
+            "dfn-geos:1.1 will be used automatically when it exists), or give "
+            "the full path to the geosx executable.")
+    xml = _resolve_deck(case, case_dir)
     if xml is None:
         raise RuntimeError("No GEOS input deck found; run the conversion "
-                           "stage first (or upload an XML + mesh)")
+                           "stage first (or upload an XML deck)")
+    missing = _missing_mesh_files(xml, case_dir)
+    if missing:
+        raise RuntimeError(
+            f"The deck '{xml.relative_to(case_dir)}' uses mesh files that are "
+            "not in this case: " + ", ".join(missing) + ". Upload them as well "
+            "(keep them next to the XML), or use a self-contained deck such as "
+            "geos_dfn_edfm.xml, which builds its own mesh.")
     nproc = str(case.get("params", {}).get("geos_nproc", 1))
     if nproc and nproc != "1":
         return ["mpiexec", "-np", nproc, geos, "-i", str(xml)], \

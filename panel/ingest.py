@@ -9,19 +9,21 @@ Recognised content
   ``materialid.dat``, ``polys/``, optional ``dfm_mesh/dfm_tet_mesh.inp`` + facets
 * dfnWorks **driver/inputs** -> ``dfn_driver.py``, ``input_generator.dat``,
   ``case_params.json``
-* **GEOS case**             -> ``*.xml`` (+ ``*.vtm`` / ``*.vtu`` / ``*.vtp``)
+* **GEOS case**             -> ``*.xml`` alone (self-contained decks such as the
+  EDFM one the panel generates) or with ``*.vtm`` / ``*.vtu`` / ``*.vtp``
 
 Typical actions produced
 ------------------------
 ``convert``  : dfnWorks outputs are present  -> run the converter
 ``dfn_mesh`` : only inputs/driver present    -> run dfnWorks, then convert
-``geos``     : a GEOS XML (+ mesh) is present -> run GEOS
+``geos``     : a GEOS XML deck is present    -> run GEOS on that exact deck
 ``full``     : nothing recognisable          -> dfnWorks -> convert -> GEOS
 """
 
 from __future__ import annotations
 
 import io
+import re
 import shutil
 import zipfile
 from pathlib import Path, PurePosixPath
@@ -30,6 +32,37 @@ DFN_OUTPUT_HINTS = ("full_mesh.inp", "params.txt", "poly_info.dat",
                     "materialid.dat", "intersection_list.dat")
 DFN_DRIVER_HINTS = ("dfn_driver.py", "input_generator.dat",
                     "case_params.json", "input_generator_clean.dat")
+MESH_SUFFIXES = (".vtm", ".vtu", ".vtp", ".vti", ".exo", ".e", ".msh")
+
+
+def is_runnable_deck(path: Path) -> bool:
+    """True for a standalone GEOS deck (not a fragment included by another)."""
+    stem = path.stem.lower()
+    if stem.endswith("_base") or stem.endswith("-base"):
+        return False
+    try:
+        head = path.read_text(errors="ignore")[:8000]
+    except OSError:
+        return False
+    return re.search(r"<Problem[\s>]", head) is not None
+
+
+def pick_deck(files: list[str], root: Path) -> str:
+    """Choose the most likely runnable GEOS deck among relative paths."""
+    xmls = [f for f in files if f.lower().endswith(".xml")]
+    if not xmls:
+        return ""
+
+    def rank(rel: str) -> tuple:
+        name = Path(rel).name.lower()
+        return (0 if name.startswith("geos_dfn_") else 1,
+                0 if name.endswith("_edfm.xml") else 1,
+                len(Path(rel).parts), rel)
+
+    for rel in sorted(xmls, key=rank):
+        if is_runnable_deck(root / rel):
+            return rel
+    return sorted(xmls, key=rank)[0]
 
 
 def safe_extract_zip(zip_bytes: bytes, dest: Path) -> list[str]:
@@ -77,30 +110,38 @@ def place_loose_files(files, dest: Path) -> list[str]:
     return written
 
 
-def detect_action(files: list[str], geos_configured: bool) -> dict:
+def detect_action(files: list[str], geos_configured: bool,
+                  case_dir: Path | None = None) -> dict:
     """Inspect extracted/uploaded relative paths and choose a pipeline."""
     low = [f.lower() for f in files]
     has_dfm = any(f.endswith("dfm_tet_mesh.inp") for f in low)
     has_dfn_out = any(Path(f).name in DFN_OUTPUT_HINTS for f in low)
     has_driver = any(Path(f).name in DFN_DRIVER_HINTS for f in low)
-    has_geos_xml = any(f.endswith(".xml") for f in low) and \
-        any(f.endswith((".vtm", ".vtu", ".vtp")) for f in low)
+    has_deck = any(f.endswith(".xml") for f in low) and (
+        case_dir is None or any(is_runnable_deck(Path(case_dir) / f)
+                                for f in files if f.lower().endswith(".xml")))
+    has_mesh = any(f.endswith(MESH_SUFFIXES) for f in low)
 
     if has_dfm or has_dfn_out:
         action, why = "convert", ("found dfnWorks mesh outputs"
                                   + (" (conforming DFM mesh)" if has_dfm
                                      else " (DFN surface mesh)"))
+    elif has_deck:
+        action, why = "geos", ("found a GEOS input deck"
+                               + ("" if has_mesh else
+                                  " (self-contained: no mesh files needed)"))
     elif has_driver:
         action, why = "full", "found dfnWorks input/driver files"
-    elif has_geos_xml:
-        action, why = "geos", "found a GEOS input deck + mesh"
+    elif any(f.endswith(".xml") for f in low):
+        action, why = "geos", "found a GEOS XML file"
     else:
         action, why = "full", "no recognisable inputs (running the full pipeline)"
 
     chain = _chain_for(action, geos_configured)
-    return {"action": action, "reason": why, "chain": chain,
+    deck = pick_deck(files, Path(case_dir)) if case_dir else ""
+    return {"action": action, "reason": why, "chain": chain, "deck": deck,
             "has_dfm": has_dfm, "has_dfn_outputs": has_dfn_out,
-            "has_geos_xml": has_geos_xml}
+            "has_geos_xml": any(f.endswith(".xml") for f in low)}
 
 
 def _chain_for(action: str, geos_configured: bool) -> list[str]:
