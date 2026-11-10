@@ -53,6 +53,21 @@ function Fail($text) {
     exit 1
 }
 
+# PowerShell 5.1 turns redirected native stderr (2>$null and friends) into
+# ErrorRecords, and with $ErrorActionPreference = "Stop" the very first
+# stderr line aborts the script.  Some docker calls *expect* stderr (e.g.
+# "No such image" when probing for an image that is not there yet), so the
+# preference is lowered just around them; $LASTEXITCODE still carries the
+# real exit code.
+function Invoke-Silent([scriptblock] $Cmd) {
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "SilentlyContinue"
+    try { & $Cmd } finally { $ErrorActionPreference = $prev }
+}
+function Remove-BuildContainer {
+    Invoke-Silent { docker rm -f geosbuild *> $null }
+}
+
 function Find-Python {
     $candidates = @("py -3", "python", "python3")
     foreach ($c in $candidates) {
@@ -84,7 +99,7 @@ function Ensure-Repo($url, $dest) {
 }
 
 function Test-Image($name) {
-    docker image inspect $name *> $null
+    Invoke-Silent { docker image inspect $name *> $null }
     return ($LASTEXITCODE -eq 0)
 }
 
@@ -112,7 +127,7 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     Fail "Docker Desktop is not installed. Get it from https://docker.com/products/docker-desktop"
 }
 
-docker info *> $null
+Invoke-Silent { docker info *> $null }
 if ($LASTEXITCODE -ne 0) {
     $dockerExe = Join-Path $env:ProgramFiles "Docker\Docker\Docker Desktop.exe"
     if (Test-Path $dockerExe) {
@@ -121,7 +136,7 @@ if ($LASTEXITCODE -ne 0) {
         $ready = $false
         for ($i = 0; $i -lt 90; $i++) {
             Start-Sleep -Seconds 2
-            docker info *> $null
+            Invoke-Silent { docker info *> $null }
             if ($LASTEXITCODE -eq 0) { $ready = $true; break }
         }
         if (-not $ready) { Fail "Docker Desktop did not start. Open it manually, wait for 'Engine running', then run this script again." }
@@ -152,17 +167,17 @@ Ensure-Repo $DFNWORKS_REPO $dfnDir
 # 3 --- python dependency --------------------------------------------------
 Step 3 "Checking the Python dependency (numpy)"
 
-& $python -m pip --version *> $null
+Invoke-Silent { & $python -m pip --version *> $null }
 if ($LASTEXITCODE -ne 0) {
     Fail "this Python cannot run pip. Reinstall Python from python.org (tick 'Add python.exe to PATH' and 'pip')."
 }
 
-& $python -c "import numpy" 2>$null
+Invoke-Silent { & $python -c "import numpy" 2>$null }
 if ($LASTEXITCODE -ne 0) {
     Note "numpy is missing - installing it ..."
     & $python -m pip install --quiet numpy
     if ($LASTEXITCODE -ne 0) { Fail "could not install numpy - check the network / proxy and try again" }
-    & $python -c "import numpy" 2>$null
+    Invoke-Silent { & $python -c "import numpy" 2>$null }
     if ($LASTEXITCODE -ne 0) { Fail "numpy still cannot be imported after installing it" }
     Ok "numpy installed"
 } else {
@@ -192,7 +207,7 @@ if ($WithGeos) {
 
         # Build inside the container (fast local disk), not on a bind mount:
         # /mnt/c is several times slower and this is a 3000-file C++ build.
-        docker rm -f geosbuild *> $null
+        Remove-BuildContainer
         Note "starting the build container and copying the GEOS source ..."
         docker run -d --name geosbuild $TPL_IMAGE sleep infinity | Out-Null
         if ($LASTEXITCODE -ne 0) { Fail "could not start the build container $TPL_IMAGE" }
@@ -201,22 +216,22 @@ if ($WithGeos) {
 
         Note "downloading submodules (1/4) - several GB, no output for a while ..."
         docker exec geosbuild bash -lc "git config --global --add safe.directory '*' && cd /opt/GEOS && git submodule update --init --recursive"
-        if ($LASTEXITCODE -ne 0) { docker rm -f geosbuild *> $null; Fail "could not fetch the GEOS submodules" }
+        if ($LASTEXITCODE -ne 0) { Remove-BuildContainer; Fail "could not fetch the GEOS submodules" }
 
         Note "configuring (2/4) ..."
         docker exec geosbuild bash -lc "cd /opt/GEOS && python3 scripts/config-build.py -hc /spack-generated.cmake -bt Release -bp /work/geos-build -ip /work/geos-install -DENABLE_HYPRE=ON -DENABLE_TRILINOS=OFF -DGEOS_LA_INTERFACE=Hypre -DENABLE_TESTS=OFF -DENABLE_EXAMPLES=OFF -DENABLE_BENCHMARKS=OFF -DDISABLE_UNIT_TESTS=ON"
-        if ($LASTEXITCODE -ne 0) { docker rm -f geosbuild *> $null; Fail "GEOS configure failed" }
+        if ($LASTEXITCODE -ne 0) { Remove-BuildContainer; Fail "GEOS configure failed" }
 
         Note "compiling (3/4) - expect 30-60 minutes with no output ..."
         docker exec geosbuild bash -lc "cd /work/geos-build && make -j4 geosx"
-        if ($LASTEXITCODE -ne 0) { docker rm -f geosbuild *> $null; Fail "GEOS build failed (low memory? edit -j4 in this script and try again)" }
+        if ($LASTEXITCODE -ne 0) { Remove-BuildContainer; Fail "GEOS build failed (low memory? edit -j4 in this script and try again)" }
 
         Note "packaging the image (4/4) ..."
         docker exec geosbuild bash -lc "rm -rf /opt/geos && mkdir -p /opt/geos && cp -a /work/geos-build/. /opt/geos/"
-        if ($LASTEXITCODE -ne 0) { docker rm -f geosbuild *> $null; Fail "could not copy the GEOS build to /opt/geos" }
+        if ($LASTEXITCODE -ne 0) { Remove-BuildContainer; Fail "could not copy the GEOS build to /opt/geos" }
         docker commit -c "ENV LD_LIBRARY_PATH=/opt/geos/lib" geosbuild $GEOS_IMAGE | Out-Null
-        if ($LASTEXITCODE -ne 0) { docker rm -f geosbuild *> $null; Fail "could not create the image $GEOS_IMAGE" }
-        docker rm -f geosbuild *> $null
+        if ($LASTEXITCODE -ne 0) { Remove-BuildContainer; Fail "could not create the image $GEOS_IMAGE" }
+        Remove-BuildContainer
         Ok "created $GEOS_IMAGE (solver at /opt/geos/bin/geosx)"
     }
     $geosReady = $true
