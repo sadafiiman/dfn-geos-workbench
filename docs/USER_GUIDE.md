@@ -50,7 +50,7 @@ below and use **Quick process** in the top bar:
    | Found in the upload | Pipeline run |
    |---|---|
    | `full_mesh.inp` / `params.txt` / `polys/` / `dfm_mesh/…` | **convert** → GEOS case + XML deck(s) |
-   | a runnable GEOS `*.xml` (with or without mesh files) | **run GEOS** on that exact deck |
+   | a runnable GEOS `*.xml` (self-contained, or uploaded with its mesh/tables) | **run GEOS** on that exact deck |
    | `dfn_driver.py` / `input_generator.dat` / `case_params.json` | **dfnWorks mesh → convert** (→ GEOS if configured) |
    | nothing recognised | full pipeline |
 
@@ -342,7 +342,7 @@ detects `*.xml` and runs stage 3 on the runnable deck. Decks that only
 | Stage 1 fails with `MO DOES NOT EXIST: mo_poisson_pts` | You are using a released LaGriT binary; use the docker backend or a LaGriT built from source (see `docs/INSTALL_ubuntu.md`) |
 | Stage 1 fails with `Missing percent of mesh is larger than tolerance` | The conforming DFM mesh lost sliver triangles; the panel already passes `allowed_percentage=5` — for very dense networks refine `h` |
 | Stage 3 fails: *"GEOS is not configured"* | Set *GEOS backend* = `docker` (leave the image blank — a local `dfn-geos:*` image is auto-detected), or point *GEOS executable* at a binary. Build the image once; if you only need the mesh and the decks, ignore this stage |
-| Stage 3 fails: *"uses mesh files that are not in this case"* | Upload the named `.vtm`/`.vtu` files with the XML, or use a self-contained deck such as `geos_dfn_edfm.xml` |
+| Stage 3 fails: *"needs files that are not in this case"* | Upload the named files (mesh `.vtm`/`.vtu`, PVT/relative-permeability tables `.txt`) together with the XML — loose files are fine, no zip needed. A single XML only works for self-contained decks such as `geos_dfn_edfm.xml` |
 | GEOS deck fails with *"this FieldSpecification targets (an) empty set(s)"* | A source/sink box in your own deck captures no cells; align it with the mesh cell centres |
 | Output files owned by `root` after a docker job | Should not happen (the panel runs GEOS as your user and restores ownership); if it does, `docker run --rm --entrypoint chown -v "$PWD":/w ees16/dfnworks:latest -R $(id -u):$(id -g) /w` |
 | `docker: permission denied` | Add your user to the `docker` group and re-login, or run the panel with sufficient rights |

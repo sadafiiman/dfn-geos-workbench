@@ -25,10 +25,13 @@ STAGE_GEOS_RUN = "run_geos"
 # used by this project installs the build tree at /opt/geos).
 GEOS_IN_CONTAINER = "/opt/geos/bin/geosx"
 
-# Mesh files a deck points at (<VTKMesh file="..."/>, similar tags).
-_MESH_REF_RE = re.compile(
-    r"<(?:VTK|Exodus|PAMELA|Internal|Sunrise|Embedded|Collocated\w*)Mesh\b"
-    r"[^>]*?\bfile=\"([^\"]+)\"", re.S)
+# External files a deck points at: mesh files (<VTKMesh file="..."/>) and the
+# data tables used by constitutive models (tableFiles="{ a.txt, b.txt }").
+_FILE_ATTR_RE = re.compile(
+    r"\b(file|files|tableFiles|rockTableFiles|fluidTableFiles|voxelFile|"
+    r"coordinateFiles|particleFile|OBLOperatorsTableFile)\s*=\s*\"([^\"]*)\"",
+    re.I)
+_INCLUDE_RE = re.compile(r"<File\b[^>]*\bname=\"([^\"]+)\"")
 
 
 class JobRunner:
@@ -295,14 +298,25 @@ def _resolve_deck(case: dict, case_dir: Path) -> Path | None:
                  if p.exists() and is_runnable_deck(p)), None)
 
 
-def _missing_mesh_files(xml: Path, case_dir: Path) -> list[str]:
-    """Relative mesh files a deck points at that are not in the case."""
+def _split_refs(value: str) -> list[str]:
+    """Split ``"a.txt"`` or ``"{ a.txt, b.txt }"`` into plain file names."""
+    value = value.strip().strip("{}").strip()
+    return [v.strip().strip("'\"") for v in re.split(r"[,\s]+", value)
+            if v.strip()]
+
+
+def _missing_input_files(xml: Path, case_dir: Path) -> list[str]:
+    """Files a deck points at that are not in the case (relative to it)."""
     try:
         text = xml.read_text(errors="ignore")
     except OSError:
         return []
+    refs: list[str] = []
+    for _attr, value in _FILE_ATTR_RE.findall(text):
+        refs.extend(_split_refs(value))
+    refs.extend(_INCLUDE_RE.findall(text))
     missing = []
-    for ref in _MESH_REF_RE.findall(text):
+    for ref in refs:
         ref = ref.strip()
         if not ref or ref.startswith(("/", "\\")) or "://" in ref:
             continue          # absolute container path or remote URL
@@ -339,13 +353,15 @@ def stage_geos_run(config: Config, case: dict, case_dir: Path):
     if xml is None:
         raise RuntimeError("No GEOS input deck found; run the conversion "
                            "stage first (or upload an XML deck)")
-    missing = _missing_mesh_files(xml, case_dir)
+    missing = _missing_input_files(xml, case_dir)
     if missing:
         raise RuntimeError(
-            f"The deck '{xml.relative_to(case_dir)}' uses mesh files that are "
-            "not in this case: " + ", ".join(missing) + ". Upload them as well "
-            "(keep them next to the XML), or use a self-contained deck such as "
-            "geos_dfn_edfm.xml, which builds its own mesh.")
+            f"The deck '{xml.relative_to(case_dir)}' needs files that are not "
+            "in this case: " + ", ".join(missing) + ". Upload them as well "
+            "(loose files, keep them in the same folder as the XML). GEOS "
+            "resolves these paths relative to the deck, so a single XML only "
+            "works when it is self-contained (e.g. geos_dfn_edfm.xml, which "
+            "builds its own mesh and needs no tables).")
     nproc = str(case.get("params", {}).get("geos_nproc", 1))
     if nproc and nproc != "1":
         return ["mpiexec", "-np", nproc, geos, "-i", str(xml)], \

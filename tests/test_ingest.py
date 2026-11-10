@@ -104,6 +104,54 @@ class TestOtherUploads(DeckFixtures):
         self.assertEqual(info["deck"], "my_deck.xml")
 
 
+class TestDeckFileReferences(DeckFixtures):
+    """A deck is only runnable when the files it points at are present."""
+
+    TABLE_DECK = """<?xml version="1.0" ?>
+<Problem>
+  <Mesh>
+    <InternalMesh name="m" elementTypes="{ C3D8 }" xCoords="{ 0, 1 }"
+                  yCoords="{ 0, 1 }" zCoords="{ 0, 1 }"
+                  nx="{ 1 }" ny="{ 1 }" nz="{ 1 }" cellBlockNames="{ cb1 }"/>
+  </Mesh>
+  <Constitutive>
+    <BlackOilFluid name="fluid" phaseNames="{ oil, gas, water }"
+      tableFiles="{ pvto.txt, pvtg.txt }"/>
+  </Constitutive>
+</Problem>
+"""
+
+    def _missing(self, name: str) -> list[str]:
+        from panel.jobs import _missing_input_files
+        return _missing_input_files(self.root / name, self.root)
+
+    def test_table_files_are_checked(self):
+        (self.root / "deck.xml").write_text(self.TABLE_DECK)
+        self.assertEqual(self._missing("deck.xml"), ["pvtg.txt", "pvto.txt"])
+        (self.root / "pvto.txt").write_text("x")
+        (self.root / "pvtg.txt").write_text("x")
+        self.assertEqual(self._missing("deck.xml"), [])
+
+    def test_mesh_file_is_checked(self):
+        (self.root / "deck.xml").write_text(
+            '<?xml version="1.0" ?>\n<Problem><Mesh>'
+            '<VTKMesh name="m" file="case.vtm"/>'
+            "</Mesh></Problem>\n")
+        self.assertEqual(self._missing("deck.xml"), ["case.vtm"])
+        (self.root / "case.vtm").write_text("<VTKFile/>")
+        self.assertEqual(self._missing("deck.xml"), [])
+
+    def test_included_decks_are_checked(self):
+        (self.root / "main.xml").write_text(
+            '<Problem>\n<Included><File name="base.xml"/></Included>\n</Problem>')
+        self.assertEqual(self._missing("main.xml"), ["base.xml"])
+
+    def test_self_contained_deck_needs_nothing(self):
+        (self.root / "deck.xml").write_text(self.TABLE_DECK.replace(
+            '     tableFiles="{ pvto.txt, pvtg.txt }"', ""))
+        self.assertEqual(self._missing("deck.xml"), [])
+
+
 class TestGeosConfiguration(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()

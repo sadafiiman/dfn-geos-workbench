@@ -472,8 +472,8 @@ class Handler(BaseHTTPRequestHandler):
           <p class="muted">A single XML is enough when the deck is
              self-contained — the EDFM deck (<code>geos_dfn_edfm.xml</code>)
              builds its own matrix mesh, so it needs no other files. Decks that
-             point at a <code>.vtm</code>/<code>.vtu</code> need those files
-             uploaded with them.</p>
+             point at a mesh (<code>.vtm</code>/<code>.vtu</code>) or at data
+             tables (<code>.txt</code>) need those files uploaded with them.</p>
           <p class="muted">Recognised: <code>full_mesh.inp</code>,
              <code>params.txt</code>, <code>polys/</code>,
              <code>dfm_mesh/dfm_tet_mesh.inp</code>, <code>dfn_driver.py</code>,
