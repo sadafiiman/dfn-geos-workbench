@@ -10,7 +10,7 @@ import subprocess
 import sys
 import threading
 import time
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 from .config import Config
 from .db import Database
@@ -195,15 +195,18 @@ class JobRunner:
             _backend, image = self.config.resolve_backend("geos")
         workdir = "/app"
         inner = argv[:]
-        # container python for dfnWorks stages
+        # container python for dfnWorks stages: a host interpreter (e.g.
+        # C:\...\python.exe on Windows) does not exist inside the Linux
+        # container, so swap any python executable for the container's python3.
+        # PureWindowsPath parses both separators, so this also recognises
+        # POSIX paths and bare names regardless of the host OS.
         if stage in (STAGE_DFN_MESH, STAGE_CONVERT):
-            if inner[0].endswith("python") or inner[0].endswith("python3") \
-                    or Path(inner[0]).name in ("python", "python3"):
+            stem = PureWindowsPath(str(inner[0])).stem
+            if stem == "python" or stem.startswith("python3"):
                 inner[0] = "python3"
         # translate absolute case paths to the mount point
         cased = str(case_dir)
-        inner = [a.replace(cased, workdir) if a.startswith(cased) else a
-                 for a in inner]
+        inner = [_container_path(a, cased) for a in inner]
         # the container carries its own dependencies; drop host PYTHONPATH
         env = {k: v for k, v in env.items()
                if k != "PYTHONPATH" and not k.startswith("LAGRIT")}
@@ -223,6 +226,22 @@ class JobRunner:
 
 
 # ------------------------------------------------------------------ stages --
+def _container_path(arg: str, case_dir: str, workdir: str = "/app") -> str:
+    """Map a host path under *case_dir* onto the container mount point.
+
+    The translated path always uses POSIX separators: containers are Linux,
+    and a Windows host would otherwise hand them ``/app\\name`` (a single
+    name containing backslashes, which GEOS/pydfnworks cannot resolve).
+    On Windows the case-dir prefix is matched case-insensitively, since
+    drive-letter casing may differ between configuration and arguments.
+    """
+    hit = arg.startswith(case_dir) or (
+        os.name == "nt" and arg.lower().startswith(case_dir.lower()))
+    if not hit:
+        return arg
+    return workdir + arg[len(case_dir):].replace("\\", "/")
+
+
 def _base_env(config: Config) -> dict:
     env = dict(os.environ)
     py_entries = config.pythonpath_entries()
