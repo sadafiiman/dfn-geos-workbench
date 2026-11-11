@@ -207,19 +207,24 @@ if ($WithGeos) {
 
         # Build inside the container (fast local disk), not on a bind mount:
         # /mnt/c is several times slower and this is a 3000-file C++ build.
+        # Keep the source out of /opt/GEOS: the toolchain image stores its
+        # prebuilt TPLs there (GEOSX_TPL_DIR=/opt/GEOS/GEOS_TPL-*), and
+        # docker cp onto an existing directory would nest the repo as
+        # /opt/GEOS/GEOS. /workspace is clean, so use /workspace/GEOS.
         Remove-BuildContainer
         Note "starting the build container and copying the GEOS source ..."
         docker run -d --name geosbuild $TPL_IMAGE sleep infinity | Out-Null
         if ($LASTEXITCODE -ne 0) { Fail "could not start the build container $TPL_IMAGE" }
-        docker cp $geosDir geosbuild:/opt/GEOS
+        docker exec geosbuild bash -lc "rm -rf /workspace && mkdir -p /workspace"
+        docker cp $geosDir geosbuild:/workspace/GEOS
         if ($LASTEXITCODE -ne 0) { Fail "could not copy the GEOS source into the container" }
 
         Note "downloading submodules (1/4) - several GB, no output for a while ..."
-        docker exec geosbuild bash -lc "git config --global --add safe.directory '*' && cd /opt/GEOS && git submodule update --init --recursive"
+        docker exec geosbuild bash -lc "git config --global --add safe.directory '*' && cd /workspace/GEOS && git submodule update --init --recursive"
         if ($LASTEXITCODE -ne 0) { Remove-BuildContainer; Fail "could not fetch the GEOS submodules" }
 
         Note "configuring (2/4) ..."
-        docker exec geosbuild bash -lc "cd /opt/GEOS && python3 scripts/config-build.py -hc /spack-generated.cmake -bt Release -bp /work/geos-build -ip /work/geos-install -DENABLE_HYPRE=ON -DENABLE_TRILINOS=OFF -DGEOS_LA_INTERFACE=Hypre -DENABLE_TESTS=OFF -DENABLE_EXAMPLES=OFF -DENABLE_BENCHMARKS=OFF -DDISABLE_UNIT_TESTS=ON"
+        docker exec geosbuild bash -lc "cd /workspace/GEOS && python3 scripts/config-build.py -hc /spack-generated.cmake -bt Release -bp /work/geos-build -ip /work/geos-install -DENABLE_HYPRE=ON -DENABLE_TRILINOS=OFF -DGEOS_LA_INTERFACE=Hypre -DENABLE_TESTS=OFF -DENABLE_EXAMPLES=OFF -DENABLE_BENCHMARKS=OFF -DDISABLE_UNIT_TESTS=ON"
         if ($LASTEXITCODE -ne 0) { Remove-BuildContainer; Fail "GEOS configure failed" }
 
         Note "compiling (3/4) - expect 30-60 minutes with no output ..."
