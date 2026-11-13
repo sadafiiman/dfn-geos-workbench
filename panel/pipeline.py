@@ -68,32 +68,76 @@ def _user_fractures(fractures: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _fnum(v, default: float) -> str:
+    try:
+        return repr(float(v))
+    except (TypeError, ValueError):
+        return repr(float(default))
+
+
 def _family_fractures(families: list[dict]) -> str:
+    """Emit one DFN.add_fracture_family(...) call per family.
+
+    The keyword arguments follow pydfnworks exactly: 'constant' needs
+    ``constant=``; 'log_normal' needs ``log_mean=``/``log_std=``; 'tpl' needs
+    ``alpha=``; 'exp' needs ``exp_mean=``; the sampled distributions take
+    optional ``min_radius=``/``max_radius=`` bounds.
+    """
     lines = []
     for fam in families:
-        hy = fam.get("hy", {})
+        dist = fam.get("distribution", "constant")
+        if dist == "log_normal":
+            size_expr = ("log_mean=%s, log_std=%s" % (
+                _fnum(fam.get("log_mean"), 0.0),
+                _fnum(fam.get("log_std"), 0.5)))
+        elif dist == "tpl":
+            size_expr = "alpha=%s" % _fnum(fam.get("alpha"), 2.5)
+        elif dist == "exp":
+            size_expr = "exp_mean=%s" % _fnum(fam.get("exp_mean"), 1.0)
+        else:
+            dist = "constant"
+            size_expr = "constant=%s" % _fnum(fam.get("constant"), 2.0)
+        if dist != "constant":
+            if fam.get("min_radius") is not None:
+                size_expr += ", min_radius=%s" % _fnum(fam["min_radius"], 0.1)
+            if fam.get("max_radius") is not None:
+                size_expr += ", max_radius=%s" % _fnum(fam["max_radius"], 5.0)
+        # dfnGen needs one rkappa entry per family: omitting kappa for some
+        # families writes a short rkappa array and input checking aborts
+        # ("rkappa has defined N-1 value(s) but there are N families").
+        # Fall back to dfnWorks' own default, kappa = 20.
+        kappa_expr = f"kappa={_fnum(fam.get('kappa'), 20.0)}, "
         lines.append(
             "DFN.add_fracture_family(shape={shape!r}, distribution={dist!r}, "
-            "kappa={kappa}, probability={prob}, aspect={aspect}, "
-            "beta_distribution=1, beta={beta}, trend={trend}, plunge={plunge}, "
-            "{size_expr}, hy_variable='transmissivity', hy_function='correlated', "
+            "{kappa_expr}probability={prob}, aspect={aspect}, "
+            "beta_distribution={beta_dist}, beta={beta}, trend={trend}, "
+            "plunge={plunge}, {size_expr}, hy_variable='transmissivity', "
+            "hy_function='correlated', "
             "hy_params={{'alpha': {alpha}, 'beta': {beta_h}}})".format(
                 shape=fam.get("shape", "rect"),
-                dist=fam.get("distribution", "constant"),
-                kappa=fam.get("kappa", 20.0),
-                prob=fam.get("probability", 1.0),
-                aspect=fam.get("aspect", 1.0),
-                beta=fam.get("beta", 0.0),
-                trend=fam.get("trend", 0.0),
-                plunge=fam.get("plunge", 90.0),
-                size_expr=("constant=%s" % fam.get("constant", 2.0)
-                           if fam.get("distribution", "constant") == "constant"
-                           else "mean=%s, min=%s, max=%s" % (
-                               fam.get("mean", 1.0), fam.get("min", 0.1),
-                               fam.get("max", 5.0))),
-                alpha=hy.get("alpha", 1e-13),
-                beta_h=hy.get("beta", 1.0)))
+                dist=dist,
+                kappa_expr=kappa_expr,
+                prob=_fnum(fam.get("probability", 1.0), 1.0),
+                aspect=_fnum(fam.get("aspect", 1.0), 1.0),
+                beta_dist=int(bool(fam.get("beta_distribution"))),
+                beta=_fnum(fam.get("beta", 0.0), 0.0),
+                trend=_fnum(fam.get("trend", 0.0), 0.0),
+                plunge=_fnum(fam.get("plunge", 90.0), 90.0),
+                size_expr=size_expr,
+                alpha=_fnum((fam.get("hy") or {}).get("alpha", 1e-13), 1e-13),
+                beta_h=_fnum((fam.get("hy") or {}).get("beta", 1.0), 1.0)))
     return "\n".join(lines)
+
+
+# the canonical examples/constant layout, proven end-to-end
+DEFAULT_FAMILIES = [
+    {"shape": "rect", "distribution": "constant", "constant": 2.0,
+     "aspect": 1.0, "kappa": 20.0, "probability": 1.0, "trend": 0.0,
+     "plunge": 0.0},
+    {"shape": "rect", "distribution": "constant", "constant": 2.0,
+     "aspect": 1.0, "kappa": 20.0, "probability": 1.0, "trend": 35.0,
+     "plunge": 90.0},
+]
 
 
 def write_driver_script(case_dir: Path, case_name: str, params: dict) -> Path:
@@ -103,39 +147,35 @@ def write_driver_script(case_dir: Path, case_name: str, params: dict) -> Path:
     fractures = params.get("fractures", [])
     families = params.get("families", [])
 
-    extra = ""
+    fracture_lines = []
     if fractures:
-        fracture_code = "# user-defined fractures\n" + _user_fractures(fractures)
-    elif families:
-        fracture_code = "# stochastic fracture families\n" + _family_fractures(families)
-    else:
-        # Default: two orthogonal constant-size fracture families (the layout
-        # of the canonical examples/constant driver, proven end-to-end).
-        # NOTE for user-defined fractures: dfnGen/FRAM rejects intersections
-        # shorter than the mesh resolution h and fractures whose edges run
-        # closer than h to another fracture's edge -- keep margins > h.
-        fracture_code = "# stochastic fracture families (default)\n" + _family_fractures([
-            {"distribution": "constant", "constant": 2.0, "aspect": 1.0,
-             "kappa": 20.0, "probability": 1.0, "trend": 0.0, "plunge": 0.0},
-            {"distribution": "constant", "constant": 2.0, "aspect": 1.0,
-             "kappa": 20.0, "probability": 1.0, "trend": 35.0, "plunge": 90.0},
-        ])
-        extra += ("\nDFN.params['nPoly']['value'] = "
-                  f"{int(params.get('n_poly', 24))}\n"
-                  "DFN.params['stopCondition']['value'] = 0\n"
-                  "DFN.params['orientationOption']['value'] = 1\n"
-                  "DFN.params['boundaryFaces']['value'] = [1, 1, 0, 0, 0, 0]")
+        fracture_lines.append("# user-defined fractures (always inserted)")
+        fracture_lines.append(_user_fractures(fractures))
+    stochastic = families or ([] if fractures else DEFAULT_FAMILIES)
+    if stochastic:
+        fracture_lines.append("# stochastic fracture families"
+                              + (" (default)" if not families else ""))
+        fracture_lines.append(_family_fractures(stochastic))
+    fracture_code = "\n".join(fracture_lines)
+
+    # dfnGen defaults to stopCondition=1 (p32 targets), which ignores the
+    # per-family probabilities pydfnworks writes; the panel always works in
+    # count space, so the stochastic path must switch to stopCondition=0 and
+    # set nPoly = total accepted fractures (user fractures included).
+    extra = ""
+    if stochastic:
+        n_poly = int(params.get("n_poly") or 24)
+        extra += (f"\nDFN.params['nPoly']['value'] = {n_poly}"
+                  "\nDFN.params['stopCondition']['value'] = 0"
+                  "\nDFN.params['orientationOption']['value'] = "
+                  f"{int(params.get('orientation_option', 1))}")
+    bfaces = params.get("boundary_faces") or ([1, 1, 0, 0, 0, 0] if stochastic
+                                              else None)
+    if bfaces:
+        extra += (f"\nDFN.params['boundaryFaces']['value'] = "
+                  f"{[int(v) for v in bfaces]}")
 
     include_dfm = bool(params.get("mesh_dfm", True))
-    if params.get("boundary_faces"):
-        extra += (f"\nDFN.params['boundaryFaces']['value'] = "
-                  f"{params['boundary_faces']}")
-    if params.get("n_poly"):
-        extra += f"\nDFN.params['nPoly']['value'] = {int(params['n_poly'])}"
-        extra += "\nDFN.params['stopCondition']['value'] = 0"
-        extra += ("\nDFN.params['orientationOption']['value'] = "
-                  f"{int(params.get('orientation_option', 1))}")
-
     code = DRIVER_TEMPLATE.format(
         name=case_name,
         ncpu=int(params.get("ncpu", 4)),

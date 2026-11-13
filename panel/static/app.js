@@ -28,6 +28,39 @@
     }
   }
 
+  // ⧉ Copy buttons: copy the text of the element named in data-copy-target.
+  // Uses the async clipboard API when available, with a textarea fallback
+  // for plain-http (non-secure) contexts.
+  document.addEventListener("click", (ev) => {
+    const btn = ev.target.closest("button.copy-btn");
+    if (!btn) return;
+    const el = document.querySelector(btn.dataset.copyTarget);
+    if (!el) return;
+    const text = el.textContent || "";
+    const flash = (ok) => {
+      const old = btn.textContent;
+      btn.textContent = ok ? "Copied ✓" : "Copy failed";
+      setTimeout(() => { btn.textContent = old; }, 1200);
+    };
+    const fallbackCopy = () => {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      flash(ok);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => flash(true), fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
+  });
+
   document.addEventListener("click", (ev) => {
     const btn = ev.target.closest("[data-cancel]");
     if (btn && confirm("Cancel this job?")) {

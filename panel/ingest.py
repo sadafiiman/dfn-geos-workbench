@@ -178,3 +178,52 @@ def resolve_dfn_outputs(case_dir: Path) -> tuple[Path | None, Path | None]:
             job_dir = p.parent
             break
     return dfm_dir, job_dir
+
+
+def find_full_mesh(case_dir: Path) -> Path | None:
+    """The final dfnWorks surface mesh: ``output/full_mesh.inp`` if present,
+    else the shallowest ``full_mesh.inp`` anywhere in the case."""
+    case_dir = Path(case_dir)
+    preferred = case_dir / "output" / "full_mesh.inp"
+    if preferred.is_file():
+        return preferred
+    hits = sorted((p for p in case_dir.rglob("full_mesh.inp") if p.is_file()),
+                  key=lambda p: (len(p.relative_to(case_dir).parts),
+                                 str(p)))
+    return hits[0] if hits else None
+
+
+def dfnworks_output_files(case_dir: Path) -> list[tuple[Path, str]]:
+    """Every dfnWorks run artifact as (absolute path, archive name) pairs.
+
+    Prefers the whole ``output/`` folder; for uploaded/extracted layouts it
+    falls back to the located dfnWorks job directory (plus a DFM mesh
+    directory that lives outside it).  LaGriT scratch files (``*.lg``) are
+    excluded.
+    """
+    case_dir = Path(case_dir)
+    roots: list[tuple[Path, str]] = []
+    out_dir = case_dir / "output"
+    if out_dir.is_dir():
+        roots.append((out_dir, "output"))
+        covered: Path | None = out_dir
+    else:
+        dfm_dir, job_dir = resolve_dfn_outputs(case_dir)
+        if job_dir is not None:
+            roots.append((job_dir, "" if job_dir == case_dir else "output"))
+            covered = job_dir
+        else:
+            covered = None
+        if dfm_dir is not None and dfm_dir != covered \
+                and covered not in dfm_dir.parents:
+            roots.append((dfm_dir, "output/dfm_mesh"))
+
+    files: dict[str, Path] = {}
+    for base, prefix in roots:
+        for p in sorted(base.rglob("*")):
+            if not p.is_file() or p.suffix == ".lg":
+                continue
+            rel = p.relative_to(base).as_posix()
+            arc = rel if prefix == "" else f"{prefix}/{rel}"
+            files.setdefault(arc, p)
+    return sorted(((p, arc) for arc, p in files.items()), key=lambda t: t[1])

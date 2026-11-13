@@ -28,7 +28,11 @@ from pathlib import Path
 from .config import Config
 from .db import Database
 from . import render as R
+from . import dfn_input
+from . import ingest
+from . import preview as PV
 from .jobs import (STAGE_CONVERT, STAGE_DFN_MESH, STAGE_GEOS_RUN, JobRunner)
+from .pipeline import DEFAULT_FAMILIES
 
 PKG_DIR = Path(__file__).resolve().parent
 WORKBENCH = PKG_DIR.parent
@@ -45,6 +49,288 @@ _STAGE_LABELS = {
     STAGE_CONVERT: ("2 · Convert → GEOS", "VTK multi-block + XML decks"),
     STAGE_GEOS_RUN: ("3 · Run GEOS", "single-phase fracture flow"),
 }
+
+# ---------------------------------------------------------------- DFN editor --
+# "Size" changes meaning with the radius distribution (see _family_row_html).
+_FAMILY_DIST_HELP = (
+    "Size depends on the distribution: <b>constant</b> → size itself · "
+    "<b>log_normal</b> → log mean (SD = log std) · <b>tpl</b> → alpha · "
+    "<b>exp</b> → exp mean. Min/Max bound the sampled sizes. Probabilities "
+    "are relative weights (they don't need to sum to 1 — dfnGen rescales "
+    "them); the fracture count comes from “Number of fractures” (nPoly). "
+    "<b>Kappa</b> is the Fisher orientation concentration — leave blank for "
+    "dfnWorks' default of 20 (one value per family is required).")
+
+_BLANK_FAMILY = {"shape": "rect", "distribution": "constant",
+                 "constant": 2.0, "aspect": 1.0, "probability": 1.0,
+                 "trend": 0.0, "plunge": 0.0, "beta_distribution": 0,
+                 "beta": 0.0}
+
+
+def default_params() -> dict:
+    """The parameter set a brand-new case gets; also used by the editor's
+    “↺ Reset to defaults” button so both stay in sync."""
+    return {
+        "domain": [6.0, 6.0, 6.0],
+        "h": 0.35,
+        "seed": 42,
+        "ncpu": 4,
+        "mesh_dfm": True,
+        "n_poly": 24,
+        "boundary_faces": [1, 1, 0, 0, 0, 0],
+        "ignore_boundary_faces": True,
+        "families": [dict(f) for f in DEFAULT_FAMILIES],
+        "fractures": [],
+    }
+
+
+def _g(value, default: str = "") -> str:
+    """Render a number for an <input value=...> (%g), or the default."""
+    if value is None or value == "":
+        return default
+    try:
+        return f"{float(value):g}"
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _num_field(form: dict, key: str, label: str, errors: list,
+               cast=float, default=None):
+    raw = (form.get(key) or "").strip()
+    if raw == "":
+        return default
+    try:
+        return cast(raw)
+    except ValueError:
+        errors.append(f"{label}: “{R.esc(raw)}” is not a number")
+        return default
+
+
+def _parse_vec3(raw: str, default, label: str, errors: list) -> list:
+    raw = (raw or "").strip().strip("{}")
+    if not raw:
+        return list(default)
+    parts = [p for p in re.split(r"[,;\s]+", raw) if p]
+    if len(parts) != 3:
+        errors.append(f"{label}: need 3 numbers x,y,z (got “{R.esc(raw)}”)")
+        return list(default)
+    try:
+        return [float(p) for p in parts]
+    except ValueError:
+        errors.append(f"{label}: “{R.esc(raw)}” is not a list of numbers")
+        return list(default)
+
+
+def _family_from_form(form: dict, i: int, errors: list) -> dict | None:
+    """One fracture-family row (fields ``fam<i>_*``) -> family dict."""
+    label = f"Family {i + 1}"
+    dist = form.get(f"fam{i}_dist") or "constant"
+    if dist not in ("constant", "log_normal", "tpl", "exp"):
+        dist = "constant"
+    fam: dict = {"shape": form.get(f"fam{i}_shape") or "rect",
+                 "distribution": dist}
+    size = _num_field(form, f"fam{i}_size", f"{label} size", errors)
+    if size is not None:
+        if dist == "constant":
+            fam["constant"] = size
+        elif dist == "log_normal":
+            fam["log_mean"] = size
+        elif dist == "tpl":
+            fam["alpha"] = size
+        else:
+            fam["exp_mean"] = size
+    if dist == "log_normal":
+        sd = _num_field(form, f"fam{i}_sd", f"{label} log std", errors)
+        if sd is not None:
+            fam["log_std"] = sd
+    mn = _num_field(form, f"fam{i}_min", f"{label} min", errors)
+    mx = _num_field(form, f"fam{i}_max", f"{label} max", errors)
+    if dist != "constant":
+        if mn is not None:
+            fam["min_radius"] = mn
+        if mx is not None:
+            fam["max_radius"] = mx
+    for key, dkey in (("aspect", "aspect"), ("prob", "probability"),
+                      ("trend", "trend"), ("plunge", "plunge")):
+        v = _num_field(form, f"fam{i}_{key}", f"{label} {key}", errors)
+        if v is not None:
+            fam[dkey] = v
+    kappa = _num_field(form, f"fam{i}_kappa", f"{label} kappa", errors)
+    if kappa is not None:
+        fam["kappa"] = kappa
+    if form.get(f"fam{i}_bd"):
+        fam["beta_distribution"] = 1
+        beta = _num_field(form, f"fam{i}_beta", f"{label} beta", errors,
+                          default=0.0)
+        fam["beta"] = beta if beta is not None else 0.0
+    else:
+        fam["beta_distribution"] = 0
+        fam["beta"] = 0.0
+    return fam
+
+
+def _uf_from_form(form: dict, i: int, errors: list) -> dict | None:
+    """One user-fracture row (fields ``uf<i>_*``) -> fracture dict, or None
+    when the row was left untouched."""
+    label = f"Fracture {i + 1}"
+    raw_r = (form.get(f"uf{i}_radii") or "").strip()
+    raw_c = (form.get(f"uf{i}_ctr") or "").strip()
+    raw_n = (form.get(f"uf{i}_nrm") or "").strip()
+    if not (raw_r or raw_c or raw_n):
+        return None
+    uf: dict = {"shape": form.get(f"uf{i}_shape") or "rect"}
+    try:
+        uf["radii"] = float(raw_r) if raw_r else 0.5
+    except ValueError:
+        errors.append(f"{label}: radius “{R.esc(raw_r)}” is not a number")
+        uf["radii"] = 0.5
+    aspect = (form.get(f"uf{i}_aspect") or "").strip()
+    if aspect:
+        try:
+            uf["aspect_ratio"] = float(aspect)
+        except ValueError:
+            errors.append(f"{label}: aspect “{R.esc(aspect)}” is not a number")
+    uf["translation"] = _parse_vec3(raw_c, [0.0, 0.0, 0.0],
+                                    f"{label} center", errors)
+    uf["normal"] = _parse_vec3(raw_n, [0.0, 0.0, 1.0],
+                               f"{label} normal", errors)
+    perm = (form.get(f"uf{i}_perm") or "").strip()
+    if perm:
+        try:
+            uf["permeability"] = float(perm)
+        except ValueError:
+            errors.append(f"{label}: permeability “{R.esc(perm)}” is not a "
+                          "number")
+    return uf
+
+
+def _params_from_form(form: dict, base: dict) -> tuple[dict, list[str]]:
+    """Merge an *Edit DFN* form over the saved case parameters."""
+    errors: list[str] = []
+    p = dict(base or {})
+    p.pop("dfn_unmapped", None)
+    p.pop("dfn_notes", None)
+    p.pop("dfn_source", None)
+
+    dom = [_num_field(form, k, lbl, errors)
+           for k, lbl in (("dx", "Domain X"), ("dy", "Domain Y"),
+                          ("dz", "Domain Z"))]
+    if all(v is not None for v in dom):
+        p["domain"] = [float(v) for v in dom]
+    h = _num_field(form, "h", "Mesh h", errors)
+    if h is not None:
+        p["h"] = h
+    seed = _num_field(form, "seed", "Seed", errors, int)
+    if seed is not None:
+        p["seed"] = seed
+    ncpu = _num_field(form, "ncpu", "Threads", errors, int)
+    if ncpu is not None:
+        p["ncpu"] = max(1, ncpu)
+    n_poly_raw = _num_field(form, "n_poly", "Number of fractures", errors, int)
+    # blank = the driver default of 24; explicit values must be valid later
+    n_poly = int(n_poly_raw) if n_poly_raw is not None else 24
+
+    bf_raw = (form.get("boundary_faces") or "").strip().strip("{}")
+    if bf_raw:
+        parts = [x for x in re.split(r"[,\s]+", bf_raw) if x]
+        try:
+            bfaces = [int(float(x)) for x in parts]
+        except ValueError:
+            bfaces = []
+        if len(bfaces) == 6:
+            p["boundary_faces"] = bfaces
+        else:
+            errors.append("Boundary faces: need six 0/1 values, e.g. "
+                          "1,1,0,0,0,0")
+    p["ignore_boundary_faces"] = bool(form.get("ignore_boundary_faces"))
+    p["mesh_dfm"] = bool(form.get("mesh_dfm"))
+
+    try:
+        fam_count = min(int(form.get("fam_count") or 0), 200)
+    except ValueError:
+        fam_count = 0
+    p["families"] = [f for i in range(fam_count)
+                     if not form.get(f"fam{i}_del")
+                     and (f := _family_from_form(form, i, errors)) is not None]
+    try:
+        uf_count = min(int(form.get("uf_count") or 0), 500)
+    except ValueError:
+        uf_count = 0
+    p["fractures"] = [f for i in range(uf_count)
+                      if not form.get(f"uf{i}_del")
+                      and (f := _uf_from_form(form, i, errors)) is not None]
+
+    # nPoly only matters when the driver uses stochastic families (families
+    # present, or the default families when there are no user fractures).
+    # dfnGen rejects nPoly = 0, so require >= 1 there.
+    stochastic = bool(p["families"]) or not p["fractures"]
+    if stochastic and n_poly < 1:
+        errors.append("Number of fractures (nPoly): must be at least 1 "
+                      "(leave blank for the default of 24)")
+    else:
+        p["n_poly"] = n_poly
+    return p, errors
+
+
+def _family_row_html(i: int, fam: dict) -> str:
+    dist = fam.get("distribution", "constant")
+
+    def val(*keys):
+        for k in keys:
+            v = fam.get(k)
+            if v not in (None, ""):
+                return _g(v)
+        return ""
+
+    size = {"constant": val("constant"), "log_normal": val("log_mean"),
+            "tpl": val("alpha"), "exp": val("exp_mean")}.get(dist, "")
+    opts = "".join(
+        f'<option value="{d}"{" selected" if d == dist else ""}>{lbl}</option>'
+        for d, lbl in (("constant", "constant"), ("log_normal", "log_normal"),
+                       ("tpl", "tpl (power-law)"), ("exp", "exponential")))
+    shapes = "".join(
+        f'<option value="{s}"{" selected" if s == fam.get("shape", "rect") else ""}>{s}</option>'
+        for s in ("rect", "ell"))
+    return f"""<tr>
+      <td><select name="fam{i}_shape">{shapes}</select></td>
+      <td><select name="fam{i}_dist">{opts}</select></td>
+      <td><input name="fam{i}_size" value="{size}"></td>
+      <td><input name="fam{i}_sd" value="{_g(fam.get('log_std'))}"></td>
+      <td><input name="fam{i}_min" value="{_g(fam.get('min_radius'))}"></td>
+      <td><input name="fam{i}_max" value="{_g(fam.get('max_radius'))}"></td>
+      <td><input name="fam{i}_aspect" value="{_g(fam.get('aspect'))}"></td>
+      <td><input name="fam{i}_prob" value="{_g(fam.get('probability'))}"></td>
+      <td><input name="fam{i}_trend" value="{_g(fam.get('trend'))}"></td>
+      <td><input name="fam{i}_plunge" value="{_g(fam.get('plunge'))}"></td>
+      <td><input name="fam{i}_kappa" value="{_g(fam.get('kappa'))}"
+           placeholder="20"
+           title="Fisher kappa — orientation concentration (blank = default 20)"></td>
+      <td><input type="checkbox" name="fam{i}_bd"
+           {"checked" if fam.get("beta_distribution") else ""}></td>
+      <td><input name="fam{i}_beta" value="{_g(fam.get('beta'))}"></td>
+      <td><input type="checkbox" name="fam{i}_del" title="remove row"></td>
+    </tr>"""
+
+
+def _uf_row_html(i: int, uf: dict) -> str:
+    def vec(key, default):
+        v = uf.get(key)
+        if not v:
+            return default
+        return ",".join(_g(x) for x in v)
+
+    shapes = "".join(
+        f'<option value="{s}"{" selected" if s == uf.get("shape", "rect") else ""}>{s}</option>'
+        for s in ("rect", "ell", "poly"))
+    return f"""<tr>
+      <td><select name="uf{i}_shape">{shapes}</select></td>
+      <td><input name="uf{i}_radii" value="{_g(uf.get('radii'))}"></td>
+      <td><input name="uf{i}_aspect" value="{_g(uf.get('aspect_ratio'))}"></td>
+      <td><input name="uf{i}_ctr" value="{vec('translation', '')}"></td>
+      <td><input name="uf{i}_nrm" value="{vec('normal', '')}"></td>
+      <td><input name="uf{i}_perm" value="{_g(uf.get('permeability'))}"></td>
+      <td><input type="checkbox" name="uf{i}_del" title="remove row"></td>
+    </tr>"""
 
 
 class Panel:
@@ -174,9 +460,18 @@ class Handler(BaseHTTPRequestHandler):
         m = re.fullmatch(r"/case/(\d+)/file", path)
         if m:
             return self.file_view(int(m.group(1)), query)
+        m = re.fullmatch(r"/case/(\d+)/edit", path)
+        if m:
+            return self.page_case_edit(int(m.group(1)), None)
         m = re.fullmatch(r"/case/(\d+)/download\.zip", path)
         if m:
             return self.download_zip(int(m.group(1)))
+        m = re.fullmatch(r"/case/(\d+)/download/full_mesh", path)
+        if m:
+            return self.download_full_mesh(int(m.group(1)))
+        m = re.fullmatch(r"/case/(\d+)/download/dfnworks", path)
+        if m:
+            return self.download_dfnworks(int(m.group(1)))
         m = re.fullmatch(r"/job/(\d+)", path)
         if m:
             return self.page_job(int(m.group(1)))
@@ -205,6 +500,9 @@ class Handler(BaseHTTPRequestHandler):
             if stage in (STAGE_DFN_MESH, STAGE_CONVERT, STAGE_GEOS_RUN):
                 panel.runner.submit(case_id, stage)
             return self._redirect(f"/case/{case_id}")
+        m = re.fullmatch(r"/case/(\d+)/params", path)
+        if m:
+            return self.action_case_params(int(m.group(1)))
         m = re.fullmatch(r"/case/(\d+)/upload", path)
         if m:
             return self.action_upload(int(m.group(1)))
@@ -382,12 +680,20 @@ class Handler(BaseHTTPRequestHandler):
             for stage, (label, sub) in _STAGE_LABELS.items())
 
         params = case["params"]
+        net_html = PV.case_preview_html(cdir, params) or \
+            PV.params_preview_html(params)
         body = f"""
         <div class="card-head">
           <h2>{R.esc(case['name'])}</h2>
           <span class="muted">{R.esc(case['description'] or '')}</span>
-          <span><a class="btn primary"
-            href="/case/{case_id}/download.zip">⬇ Download results (.zip)</a></span>
+          <span class="btn-row">
+            <a class="btn" href="/case/{case_id}/edit">✎ Edit DFN</a>
+            <a class="btn" href="/case/{case_id}/download/full_mesh"
+               title="The final dfnWorks surface mesh (full_mesh.inp)">⬇ Full mesh (.inp)</a>
+            <a class="btn" href="/case/{case_id}/download/dfnworks"
+               title="All dfnWorks stage outputs (mesh, uge, polys, dfm)">⬇ dfnWorks output (.zip)</a>
+            <a class="btn primary" href="/case/{case_id}/download.zip">⬇ Results (.zip)</a>
+          </span>
         </div>
         <div class="cards">
           <div class="card"><h3>Pipeline</h3><div class="stages">{stage_buttons}</div></div>
@@ -401,10 +707,14 @@ class Handler(BaseHTTPRequestHandler):
               <input type="file" name="files" multiple>
               <button class="btn">Upload</button>
             </form>
-            <p class="muted">Uploaded files land in the case directory and can be
-            referenced by generated decks (e.g. GEOS XML or dfnWorks inputs).</p>
+            <p class="muted">A dfnGen input deck (<code>*.dat</code>) pre-fills
+            the <a href="/case/{case_id}/edit">DFN editor</a>; a GEOS XML deck
+            becomes the default for stage 3. Other files land in the case
+            directory.</p>
           </div>
         </div>
+        <div class="card"><div class="card-head"><h2>Fracture network preview</h2></div>
+          {net_html}</div>
         <div class="card"><div class="card-head"><h2>Jobs</h2></div>
           <table><thead><tr><th>#</th><th>Stage</th><th>Status</th><th>Backend</th>
           <th>Created</th><th>Duration</th><th></th></tr></thead>
@@ -431,7 +741,10 @@ class Handler(BaseHTTPRequestHandler):
         <div class="card-head"><h2>Job #{job['id']} · {R.esc(job['stage'])}
           <span class="{R.STATUS_BADGE.get(job['status'],'badge')}">{R.esc(job['status'])}</span></h2>
           <a class="btn" href="/case/{case['id']}">← back to {R.esc(case['name'])}</a></div>
-        <div class="card"><pre class="log" id="logbox"
+        <div class="card"><div class="card-head"><h3>Log</h3>
+            <button class="btn copy-btn" data-copy-target="#logbox"
+              title="Copy the whole log to the clipboard">⧉ Copy log</button></div>
+          <pre class="log" id="logbox"
           data-job="{job['id']}" data-done="{0 if job['status'] in ('queued','running') else 1}">{R.esc(log) or '(no output yet)'}</pre></div>
         <div class="card"><h3>Details</h3><pre>{R.esc(json.dumps(job['details'], indent=2))}</pre></div>
         """
@@ -611,6 +924,229 @@ class Handler(BaseHTTPRequestHandler):
             "Content-Disposition":
                 f'attachment; filename="{case["name"]}_results.zip"'})
 
+    def _friendly_missing(self, case_id: int, title: str, hint: str) -> None:
+        body = f"""
+        <div class="card-head"><h2>{R.esc(title)}</h2>
+          <a class="btn" href="/case/{case_id}">← back to case</a></div>
+        <div class="card"><p>{hint}</p></div>"""
+        self._html(404, title, body)
+
+    def download_full_mesh(self, case_id: int):
+        """Download just the final dfnWorks surface mesh (full_mesh.inp)."""
+        panel = self.panel
+        case = panel.db.get_case(case_id)
+        if not case:
+            return self._html(404, "Not found",
+                              "<div class='card'>No such case</div>")
+        target = ingest.find_full_mesh(panel.case_dir(case))
+        if not target:
+            return self._friendly_missing(
+                case_id, "No full mesh yet",
+                "This case has no <code>full_mesh.inp</code> yet. Run the "
+                "<b>1 · dfnWorks mesh</b> stage (or upload dfnWorks outputs), "
+                "then this button downloads the final surface mesh on its own.")
+        self._send(200, target.read_bytes(), "application/octet-stream", {
+            "Content-Disposition":
+                f'attachment; filename="{case["name"]}_full_mesh.inp"'})
+
+    def download_dfnworks(self, case_id: int):
+        """Download all dfnWorks stage outputs (the output/ folder) as a ZIP."""
+        import io as _io
+        import zipfile as _zipfile
+        panel = self.panel
+        case = panel.db.get_case(case_id)
+        if not case:
+            return self._html(404, "Not found",
+                              "<div class='card'>No such case</div>")
+        files = ingest.dfnworks_output_files(panel.case_dir(case))
+        if not files:
+            return self._friendly_missing(
+                case_id, "No dfnWorks outputs yet",
+                "Nothing from dfnWorks was found in this case. Run the "
+                "<b>1 · dfnWorks mesh</b> stage first — then this button "
+                "bundles the whole <code>output/</code> folder (mesh "
+                "<code>.inp/.uge</code>, <code>polys/</code>, "
+                "<code>params.txt</code>, the DFM mesh, …) as one ZIP, "
+                "separate from the full results.")
+        buf = _io.BytesIO()
+        with _zipfile.ZipFile(buf, "w", _zipfile.ZIP_DEFLATED,
+                              compresslevel=6) as zf:
+            for path, arc in files:
+                zf.write(path, arcname=arc)
+        self._send(200, buf.getvalue(), "application/zip", {
+            "Content-Disposition":
+                f'attachment; filename="{case["name"]}_dfnworks_output.zip"'})
+
+    # ------------------------------------------------------------- DFN edit --
+    def page_case_edit(self, case_id: int, draft: dict | None = None,
+                       error: str = "", notice: str = "") -> None:
+        panel = self.panel
+        case = panel.db.get_case(case_id)
+        if not case:
+            return self._html(404, "Not found",
+                              "<div class='card'>No such case</div>")
+        params = draft if draft is not None else dict(case.get("params") or {})
+        families = list(params.get("families") or [])
+        fractures = list(params.get("fractures") or [])
+        if draft is None and not families and not fractures:
+            # nothing defined yet — show the driver's default layout to edit
+            families = [dict(f) for f in DEFAULT_FAMILIES]
+        fam_rows = "".join(_family_row_html(i, f)
+                           for i, f in enumerate(families))
+        uf_rows = "".join(_uf_row_html(i, f)
+                          for i, f in enumerate(fractures))
+        domain = [float(v) for v in (params.get("domain") or [6.0] * 3)]
+        bf = params.get("boundary_faces") or [1, 1, 0, 0, 0, 0]
+        bf_val = ",".join(str(int(v)) for v in bf)
+        n_poly = int(params.get("n_poly") or 0)
+        unmapped = params.get("dfn_unmapped") or {}
+        notes = params.get("dfn_notes") or []
+        notes_html = "".join(f"<p class='muted'>ℹ {R.esc(n)}</p>" for n in notes)
+        unmapped_html = ""
+        if unmapped:
+            rows = "".join(f"<tr><td><code>{R.esc(k)}</code></td>"
+                           f"<td><code>{R.esc(v)}</code></td></tr>"
+                           for k, v in unmapped.items())
+            src = params.get("dfn_source")
+            src_note = f" (from <code>{R.esc(src)}</code>)" if src else ""
+            unmapped_html = f"""
+            <div class="card"><h3>Other dfnGen keys read from the uploaded
+              deck{src_note}</h3>
+              <p class="muted">These are kept verbatim for reference; the panel
+              does not edit them.</p>
+              <table><thead><tr><th>Key</th><th>Value</th></tr></thead>
+              <tbody>{rows}</tbody></table></div>"""
+        net_html = PV.params_preview_html(params)
+        err_html = f"<div class='card error'>{error}</div>" if error else ""
+        ok_html = f"<div class='card ok-card'>{notice}</div>" if notice else ""
+        body = f"""
+        <div class="card-head"><h2>Edit DFN — {R.esc(case['name'])}</h2>
+          <span class="btn-row"><a class="btn" href="/case/{case_id}">← back
+            to case</a></span></div>
+        {err_html}{ok_html}
+        <form method="post" action="/case/{case_id}/params" class="stack">
+          <input type="hidden" name="fam_count" value="{len(families)}">
+          <input type="hidden" name="uf_count" value="{len(fractures)}">
+          <fieldset><legend>Domain & mesh</legend>
+            <div class="grid3">
+              <label>Domain X (m)<input name="dx" type="number" step="any"
+                value="{_g(domain[0])}"></label>
+              <label>Domain Y (m)<input name="dy" type="number" step="any"
+                value="{_g(domain[1])}"></label>
+              <label>Domain Z (m)<input name="dz" type="number" step="any"
+                value="{_g(domain[2])}"></label>
+            </div>
+            <div class="grid3">
+              <label>Mesh h (m)<input name="h" type="number" step="any"
+                value="{_g(params.get('h', 0.35))}"></label>
+              <label>Seed<input name="seed" type="number"
+                value="{int(params.get('seed', 42))}"></label>
+              <label>Threads<input name="ncpu" type="number"
+                value="{int(params.get('ncpu', 4))}"></label>
+            </div>
+            <label class="chk"><input type="checkbox" name="mesh_dfm"
+              {"checked" if params.get("mesh_dfm", True) else ""}>
+              Also build the conforming fracture–matrix DFM mesh (needed for
+              the conformal GEOS path)</label>
+          </fieldset>
+          <fieldset><legend>Fracture count & boundaries</legend>
+            <div class="grid3">
+              <label>Number of fractures (nPoly)
+                <input name="n_poly" type="number" min="1"
+                  value="{n_poly}"></label>
+              <label>Boundary faces (x−, x+, y−, y+, z−, z+)
+                <input name="boundary_faces" value="{bf_val}"></label>
+              <label class="chk"><input type="checkbox"
+                name="ignore_boundary_faces"
+                {"checked" if params.get("ignore_boundary_faces") else ""}>
+                Keep every cluster of intersecting fractures even if it
+                touches none of the flagged boundary faces (dfnGen
+                <code>ignoreBoundaryFaces</code>; recommended for small
+                networks)</label>
+            </div>
+            <p class="muted"><b>nPoly</b> = the total number of fractures
+            dfnGen accepts before it stops (user fractures included; leave
+            blank for the default of 24). This is the direct way to control
+            <i>how many</i> fractures the network has.</p>
+          </fieldset>
+          <fieldset><legend>Stochastic families</legend>
+            <div class="tbl-scroll"><table class="edit-grid">
+              <thead><tr><th>Shape</th><th>Distribution</th><th>Size</th>
+                <th title="log std (log_normal only)">Log SD</th><th>Min</th>
+                <th>Max</th><th>Aspect</th><th>Prob</th><th>Trend°</th>
+                <th>Plunge°</th><th title="Fisher kappa">Kappa</th>
+                <th title="constant beta rotation">β const</th><th title="beta angle">β°</th>
+                <th title="remove row">✕</th></tr></thead>
+              <tbody>{fam_rows}</tbody></table></div>
+            <p class="muted">{_FAMILY_DIST_HELP}</p>
+            <span><button class="btn" name="add_family" value="1">＋ Add
+              family</button></span>
+          </fieldset>
+          <fieldset><legend>User-defined fractures (exact placement)</legend>
+            <div class="tbl-scroll"><table class="edit-grid">
+              <thead><tr><th>Shape</th><th>Radius<br>(half size, m)</th>
+                <th>Aspect</th><th>Center x,y,z (m)</th>
+                <th>Normal x,y,z</th><th>Permeability</th>
+                <th title="remove row">✕</th></tr></thead>
+              <tbody>{uf_rows}</tbody></table></div>
+            <p class="muted">These fractures are inserted exactly as given
+            (dfnGen/FRAM still rejects intersections shorter than
+            <code>h</code> — keep margins larger than the mesh resolution).</p>
+            <span><button class="btn" name="add_fracture" value="1">＋ Add
+              fracture</button></span>
+          </fieldset>
+          <fieldset><legend>Network preview (from these parameters)</legend>
+            {net_html}
+          </fieldset>
+          <div class="btn-row">
+            <button class="btn primary" name="action" value="save">💾 Save</button>
+            <button class="btn" name="action" value="save_run">💾 Save &
+              run mesh</button>
+            <button class="btn" name="action" value="reset"
+              onclick="return confirm('Reset the DFN configuration to defaults? Current settings (including imported .dat values) will be replaced.')">↺
+              Reset to defaults</button>
+          </div>
+        </form>
+        {unmapped_html}{notes_html}
+        """
+        self._html(200, f"Edit DFN · {case['name']}", body)
+
+    def action_case_params(self, case_id: int):
+        panel = self.panel
+        case = panel.db.get_case(case_id)
+        if not case:
+            return self._redirect("/")
+        form = self._form()
+        if form.get("action") == "reset":
+            panel.db.update_case(case_id, params=default_params())
+            return self.page_case_edit(
+                case_id, None,
+                notice="<b>Reset to default DFN configuration.</b> Domain, "
+                       "mesh, families and the fracture count are back to "
+                       "the standard setup.")
+        params, errors = _params_from_form(form, case.get("params") or {})
+        err_html = "<br>".join(errors)
+        if "add_family" in form:
+            draft = dict(params)
+            draft["families"] = list(params.get("families") or []) + \
+                [dict(_BLANK_FAMILY)]
+            return self.page_case_edit(case_id, draft, error=err_html)
+        if "add_fracture" in form:
+            draft = dict(params)
+            draft["fractures"] = list(params.get("fractures") or []) + \
+                [{}]
+            return self.page_case_edit(case_id, draft, error=err_html)
+        if errors:
+            return self.page_case_edit(case_id, params, error=err_html)
+        panel.db.update_case(case_id, params=params)
+        if form.get("action") == "save_run":
+            panel.runner.submit(case_id, STAGE_DFN_MESH)
+            return self._redirect(f"/case/{case_id}")
+        return self.page_case_edit(
+            case_id, None,
+            notice="<b>Saved.</b> The dfnWorks driver is regenerated from "
+                   "these parameters when the mesh stage runs.")
+
     def page_settings(self):
         panel = self.panel
         c = panel.config
@@ -673,9 +1209,21 @@ class Handler(BaseHTTPRequestHandler):
           <li><b>Create a case</b> — defines the domain, mesh resolution
               (<code>h</code>) and the fracture network (user-defined or
               stochastic families).</li>
+          <li><b>Edit the DFN (✎ Edit DFN)</b> — any time before meshing:
+              change the model dimensions, the <b>number of fractures</b>
+              (nPoly), or the family/user-fracture tables. Upload a dfnGen
+              <code>.dat</code> deck on the case page to pre-fill the editor
+              from an existing model. The page shows an SVG preview of the
+              network (XY/XZ/YZ) from the current parameters, and the real
+              generated polygons after a mesh run.</li>
           <li><b>Run “dfnWorks mesh”</b> — runs dfnGen + LaGriT
               (<code>full_mesh.inp/uge</code>, and optionally the conforming
               DFM mesh with fracture facets).</li>
+          <li><b>Download the dfnWorks results</b> — from the case header:
+              <i>⬇ Full mesh (.inp)</i> for just the surface mesh,
+              <i>⬇ dfnWorks output (.zip)</i> for every dfnWorks artifact
+              (the whole <code>output/</code> folder), and
+              <i>⬇ Results (.zip)</i> for the whole case.</li>
           <li><b>Run “Convert → GEOS”</b> — produces a VTK multi-block case
               (<code>main.vtu</code> matrix + <code>fracture.vtu</code> face
               block with <code>collocated_nodes</code>) and two ready-to-run
@@ -701,15 +1249,14 @@ class Handler(BaseHTTPRequestHandler):
         name = form.get("name", "").strip()
         if not re.fullmatch(r"[A-Za-z0-9_\-]+", name):
             return self.page_case_form()
-        params = {
-            "domain": [float(form.get("dx", 6) or 6),
-                       float(form.get("dy", 6) or 6),
-                       float(form.get("dz", 6) or 6)],
-            "h": float(form.get("h", 0.35) or 0.35),
-            "seed": int(form.get("seed", 42) or 42),
-            "ncpu": int(form.get("ncpu", 4) or 4),
-            "mesh_dfm": bool(form.get("mesh_dfm")),
-        }
+        params = default_params()
+        params["domain"] = [float(form.get("dx", 6) or 6),
+                            float(form.get("dy", 6) or 6),
+                            float(form.get("dz", 6) or 6)]
+        params["h"] = float(form.get("h", 0.35) or 0.35)
+        params["seed"] = int(form.get("seed", 42) or 42)
+        params["ncpu"] = int(form.get("ncpu", 4) or 4)
+        params["mesh_dfm"] = bool(form.get("mesh_dfm"))
         for key in ("families", "fractures"):
             raw = (form.get(key) or "").strip()
             if raw:
@@ -767,10 +1314,29 @@ class Handler(BaseHTTPRequestHandler):
             panel.db.add_artifact(case_id, "input", rel, len(data))
             uploaded.append(rel)
             saved += 1
-        # a deck uploaded by hand becomes the case's default GEOS deck
+        # a dfnGen input deck (*.dat) pre-fills the DFN editor
         if uploaded:
-            from . import ingest
             case_dir = panel.case_dir(case)
+            for rel in uploaded:
+                p = case_dir / rel
+                if p.suffix.lower() != ".dat" or not p.is_file():
+                    continue
+                try:
+                    parsed = dfn_input.parse_dfn_dat(p.read_text(errors="replace"))
+                except Exception:  # noqa: BLE001 — never block an upload
+                    continue
+                if not dfn_input.looks_like_dfn_dat(parsed):
+                    continue
+                params = dict(case.get("params") or {})
+                params.update(parsed["params"])
+                if parsed["families"]:
+                    params["families"] = parsed["families"]
+                params["dfn_unmapped"] = parsed["unmapped"]
+                params["dfn_notes"] = parsed["notes"]
+                params["dfn_source"] = rel
+                panel.db.update_case(case_id, params=params)
+                return self._redirect(f"/case/{case_id}/edit")
+            # a GEOS XML deck uploaded by hand becomes the stage-3 default
             deck = ingest.pick_deck(uploaded, case_dir)
             if deck and ingest.is_runnable_deck(case_dir / deck):
                 params = dict(case.get("params") or {})
@@ -825,14 +1391,18 @@ class Handler(BaseHTTPRequestHandler):
           <p><a class="btn" href="/case/{case_id}/file?raw=1&amp;path=
              {R.esc(query.get('path'))}">⬇ download this file</a></p>
           <details><summary>show raw contents (first 200 lines)</summary>
-            <pre class="log">{R.esc(chr(10).join(text.splitlines()[:200]))}</pre>
+            <button class="btn copy-btn" data-copy-target="#rawpre">⧉ Copy</button>
+            <pre class="log" id="rawpre">{R.esc(chr(10).join(text.splitlines()[:200]))}</pre>
           </details>
         </div>"""
             return self._html(200, target.name, body)
         body = f"""
         <div class="card-head"><h2><code>{R.esc(query.get('path'))}</code></h2>
           <a class="btn" href="/case/{case_id}">← back</a></div>
-        <div class="card"><pre class="log">{R.esc(text)}</pre></div>"""
+        <div class="card"><div class="card-head"><h3>Contents</h3>
+          <button class="btn copy-btn" data-copy-target="#filetext"
+            title="Copy the file contents to the clipboard">⧉ Copy file</button></div>
+          <pre class="log" id="filetext">{R.esc(text)}</pre></div>"""
         self._html(200, target.name, body)
 
     # ----------------------------------------------------------------- APIs --

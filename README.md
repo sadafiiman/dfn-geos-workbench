@@ -11,6 +11,13 @@ Compatibility** as a complete, runnable package:
 * a working **web panel** to create cases, upload/manage inputs and outputs,
   and drive the whole pipeline (`dfnWorks mesh → convert → GEOS`) with live
   logs — cross-platform: Ubuntu *and* Windows, standard library only;
+* a **DFN designer** (`✎ Edit DFN`): change model dimensions and the
+  **fracture count (nPoly)**, edit fracture families / user fractures as
+  table rows, import an existing dfnGen `.dat` deck, and see an SVG preview
+  of the network (XY/XZ/YZ) before meshing — dfnWorks first, GEOS after;
+* separate downloads for every stage: **full mesh (.inp)**, **dfnWorks
+  output (.zip)** (the whole `output/` folder) and the full **results
+  (.zip)**;
 * a **mesh converter** (`dfnWorks AVS/UCD → GEOS VTK multi-block`) that
   preserves fracture surfaces, connectivity and fracture–matrix incidence;
 * a **proof of concept** generated from a real dfnWorks run, verified against
@@ -34,6 +41,8 @@ dfn-geos-workbench/
 │   └── geos_case_edfm/            ← EDFM variant (InternalMesh + Rectangles)
 ├── panel/                         ← the management panel (stdlib web app)
 │   ├── webapp.py                  ← HTTP server + UI + APIs
+│   ├── dfn_input.py               ← dfnGen .dat input parser (DFN editor)
+│   ├── preview.py                 ← SVG fracture-network preview (XY/XZ/YZ)
 │   ├── jobs.py / pipeline.py      ← job runner & pipeline stages
 │   ├── config.py / db.py          ← settings + sqlite storage
 │   └── static/                    ← css/js

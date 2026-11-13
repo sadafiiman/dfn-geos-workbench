@@ -108,16 +108,22 @@ field. **Create** makes `cases/<name>/` and opens the case page.
 
 ### 1.4 Case page
 
-The working screen, five areas top to bottom:
+The working screen, six areas top to bottom:
 
 | Area | Contents |
 |---|---|
-| **Header** | case name/description and the **⬇ Download results (.zip)** button |
+| **Header** | case name/description, **✎ Edit DFN**, **⬇ Full mesh (.inp)**, **⬇ dfnWorks output (.zip)**, **⬇ Results (.zip)** |
 | **Pipeline** | the three stage buttons — `1 · dfnWorks mesh`, `2 · Convert → GEOS`, `3 · Run GEOS` |
+| **Fracture network preview** | the network as SVG (XY / XZ / YZ): real generated polygons after a mesh run, otherwise a preview from the current parameters |
 | **Jobs** | one row per run: stage, status (queued/running/done/failed), duration, return code, **log** link, **cancel** |
-| **Upload input files** | send files into the case; the *Sub-directory* field places them (e.g. `output/dfm_mesh`, `geos_case`) |
+| **Upload input files** | send files into the case; a dfnGen `.dat` deck pre-fills the DFN editor, a GEOS XML deck becomes the stage-3 default |
 | **Artifacts** | the notable outputs each successful job registered automatically (click to preview/download) |
 | **Files** | the complete case tree — `output/`, `dfm_mesh/`, `geos_case/`, `geos_case_edfm/`, `dfn_edfm/`, `logs/`, uploads — with preview / `raw` download / `del` |
+
+The three downloads are deliberately separate: **Full mesh** is just
+`full_mesh.inp` (the final surface mesh), **dfnWorks output** bundles the
+whole `output/` folder (mesh `.inp`/`.uge`, `polys/`, `params.txt`, DFM mesh)
+without the GEOS results, and **Results** is the entire case.
 
 Buttons are independent: you may run stage 2 on a mesh produced earlier, or
 re-run only stage 3 after changing a deck. Jobs never block the page.
@@ -132,7 +138,9 @@ the Dashboard.
 
 Full stdout+stderr of one job, auto-refreshing while it runs. This is the
 first place to look when a stage fails — the panel also stores the tail of
-the log in the job row.
+the log in the job row. A **⧉ Copy log** button copies the whole log to the
+clipboard; the same copy button appears on every file preview in the panel
+(job logs, dfnGen decks, driver scripts, …).
 
 ---
 
@@ -241,6 +249,43 @@ so are fractures whose edges run **closer than `h`** to another fracture's
 edge. Keep overlaps well above `h` — if a run ends with *"no intersecting
 fractures"*, enlarge the fractures or reduce `h`.
 
+## 4b. Edit the DFN — designer page (✎ Edit DFN)
+
+You never need the JSON textareas: every case has a **✎ Edit DFN** button
+that opens a structured editor. It is the right place to
+
+* **change the model dimensions** (domain X/Y/Z) and mesh resolution `h`,
+* set the **number of fractures** (*nPoly*) — the total count dfnGen accepts
+  before stopping (leave blank for the default 24; it must be ≥ 1 whenever
+  stochastic families are in play),
+* add/remove **stochastic families** as table rows (shape, distribution
+  `constant`/`log_normal`/`tpl`/`exp`, size, aspect, probability, trend/
+  plunge, kappa, beta rotation). Probabilities are relative weights — they
+  don't need to sum to 1, dfnGen rescales them automatically. **Kappa** (the
+  Fisher orientation concentration) may be left blank and defaults to 20;
+  dfnGen requires one value per family, so the panel always writes one.
+* add/remove **user fractures** as table rows (shape, radius, aspect, exact
+  center and normal vector, permeability).
+
+Buttons: **💾 Save** keeps the parameters (the dfnWorks driver is
+regenerated from them on the next mesh run); **💾 Save & run mesh** saves and
+starts stage 1 immediately; **↺ Reset to defaults** (asks for confirmation)
+restores the standard setup a new case gets — useful to abandon an imported
+or experimental configuration. The page also shows a live **SVG preview** of
+the network in the XY/XZ/YZ planes from the current parameters (user
+fractures exact, families sampled with the case seed), so you can judge size,
+orientation and density *before* spending a meshing run.
+
+### Start from an existing dfnGen input
+
+On the case page, upload a dfnGen **`.dat`** input deck (e.g. the
+`output_dfnGen_input_clean.dat` dfnWorks writes next to every run). The panel
+parses it and **redirects you to the editor pre-filled** with the model it
+describes: domain, `h`, seed, boundary faces, `nPoly` and the per-family
+arrays. Keys the panel does not model are listed below the form as read-only
+reference; nothing is lost. Edit the count/network there, **Save & run mesh**,
+and GEOS then processes the network as you defined it.
+
 ## 5. Run the pipeline — what each stage does
 
 On the case page, click the three buttons in order. Each click creates a
@@ -338,7 +383,9 @@ detects `*.xml` and runs stage 3 on the runnable deck. Decks that only
 | Opening a `.pvd` / `.vtu` shows **only XML text** | That is correct — those files are data, not pictures. Open them in **ParaView** (see §10.2); the panel now says so on the preview page |
 | `cannot listen on port N` at startup | Port already used; the message prints the next port to try |
 | `'python' not found` (Ubuntu) | Use `python3` (or `apt install python-is-python3`) |
-| *"no intersecting fractures"* in the log | FRAM rejected all intersections: enlarge fractures / raise overlap, lower `h`, or use the default families |
+| *"no intersecting fractures"* in the log | With *ignoreBoundaryFaces* unchecked, dfnGen only keeps fracture clusters that touch the flagged boundary faces — check the box **"Keep every cluster of intersecting fractures…"**, or flag all six faces. If no fracture pair intersects at all, raise the density (see next row) |
+| *"No fractures in the network are in the requested family. N."* at meshing | dfnGen removed the isolated fractures and family *N* ended up empty. The network is too sparse for the domain: raise **Number of fractures (nPoly)** (24 works in a 6×6×6 domain with radius-2 fractures), enlarge the family sizes (radius ≈ half the domain edge is dense), or shrink the domain. dfnGen keeps only *connected* fractures — a mesh of 10 isolated circles is not possible |
+| *"Provided value of h is greater 1/10th the minimum fracture size"* warning | The mesh will be coarse and may reject many intersections; lower `h` (⩽ size/10) or accept it for quick tests |
 | Stage 1 fails with `MO DOES NOT EXIST: mo_poisson_pts` | You are using a released LaGriT binary; use the docker backend or a LaGriT built from source (see `docs/INSTALL_ubuntu.md`) |
 | Stage 1 fails with `Missing percent of mesh is larger than tolerance` | The conforming DFM mesh lost sliver triangles; the panel already passes `allowed_percentage=5` — for very dense networks refine `h` |
 | Stage 3 fails: *"GEOS is not configured"* | Set *GEOS backend* = `docker` (leave the image blank — a local `dfn-geos:*` image is auto-detected), or point *GEOS executable* at a binary. Build the image once; if you only need the mesh and the decks, ignore this stage |

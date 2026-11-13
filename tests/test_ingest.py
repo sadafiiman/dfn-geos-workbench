@@ -195,5 +195,58 @@ class TestGeosConfiguration(unittest.TestCase):
         self.assertFalse(c.geos_ready())
 
 
+class FullMeshAndDfnZipTests(unittest.TestCase):
+    """Locators behind the case-page download buttons."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.case_dir = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_no_full_mesh(self):
+        self.assertIsNone(ingest.find_full_mesh(self.case_dir))
+        self.assertEqual(ingest.dfnworks_output_files(self.case_dir), [])
+
+    def test_preferred_output_location(self):
+        out = self.case_dir / "output"
+        out.mkdir(parents=True)
+        (out / "full_mesh.inp").write_text("mesh")
+        deep = self.case_dir / "elsewhere"
+        deep.mkdir()
+        (deep / "full_mesh.inp").write_text("decoy")
+        self.assertEqual(ingest.find_full_mesh(self.case_dir),
+                         out / "full_mesh.inp")
+
+    def test_shallowest_fallback(self):
+        deep = self.case_dir / "a" / "b"
+        deep.mkdir(parents=True)
+        (deep / "full_mesh.inp").write_text("deep")
+        shallow = self.case_dir / "full_mesh.inp"
+        shallow.write_text("shallow")
+        self.assertEqual(ingest.find_full_mesh(self.case_dir), shallow)
+
+    def test_output_folder_becomes_zip_entries(self):
+        out = self.case_dir / "output"
+        (out / "polys").mkdir(parents=True)
+        (out / "full_mesh.inp").write_text("m")
+        (out / "full_mesh.lg").write_text("scratch")   # excluded
+        (out / "polys" / "poly_1.inp").write_text("p")
+        files = ingest.dfnworks_output_files(self.case_dir)
+        arcs = [arc for _p, arc in files]
+        self.assertEqual(arcs, ["output/full_mesh.inp", "output/polys/poly_1.inp"])
+        self.assertTrue(all(not a.endswith(".lg") for a in arcs))
+
+    def test_uploaded_job_dir_fallback(self):
+        # quick-process layout: outputs extracted at the case root, no output/
+        (self.case_dir / "params.txt").write_text("1\n0.35\n0\n0\n6\n6\n6\n")
+        (self.case_dir / "full_mesh.inp").write_text("m")
+        files = ingest.dfnworks_output_files(self.case_dir)
+        arcs = [arc for _p, arc in files]
+        self.assertIn("full_mesh.inp", arcs)
+        self.assertIn("params.txt", arcs)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
